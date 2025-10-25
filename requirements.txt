@@ -1,0 +1,43 @@
+# === Core backend ===
+fastapi>=0.115,<0.116
+uvicorn[standard]>=0.30,<0.31
+python-dotenv>=1.0
+
+# === LangChain ecosystem ===
+langchain>=0.2,<0.3
+langchain-community>=0.2,<0.3
+langchain-core>=0.2,<0.3
+langchain-chroma>=0.1,<0.2
+langchain-huggingface>=0.0,<0.1
+langchain-openai>=0.1,<0.2   # optional (use only if OpenAI backend needed)
+
+# === Vector store ===
+chromadb>=0.5,<0.6
+
+# === Hugging Face / Transformers stack ===
+sentence-transformers>=3.0,<3.1
+transformers>=4.44,<4.45
+accelerate>=0.33,<0.34
+torch>=2.2,<2.4
+
+# === Data processing & utilities ===
+numpy>=1.26
+pandas>=2.2
+tqdm>=4.66
+python-multipart>=0.0.9    # for file uploads via FastAPI
+
+# === Document loading / parsing ===
+pypdf>=4.2,<4.3             # for reading PDF files in RAG
+unstructured>=0.14,<0.15    # (optional) handles docx, html, etc. if you expand later
+
+# === Data validation ===
+pydantic>=2.8,<2.9
+pydantic-settings>=2.3,<2.4  # for managing app configs cleanly via env vars
+
+# === Optional for hybrid search / reranking ===
+faiss-cpu>=1.8,<1.9
+rank-bm25>=0.2,<0.3
+
+# === Frontend (for Streamlit UI phase) ===
+streamlit>=1.37,<1.38
+requests>=2.32
