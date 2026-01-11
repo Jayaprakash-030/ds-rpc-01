@@ -12,3 +12,16 @@ wheels/
 *.lock
 resources/vectorstore
 .env
+
+# Python
+venv/
+*.pyc
+.DS_Store
+
+# Vector DB
+chroma_db/
+
+# Frontend
+node_modules/
+dist/
+build/

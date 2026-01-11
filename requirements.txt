@@ -1,0 +1,19 @@
+# --- Core Frameworks ---
+fastapi==0.110.0
+uvicorn[standard]==0.27.1
+streamlit==1.32.0
+python-dotenv==1.0.1
+
+# --- LangChain & Gemini Ecosystem ---
+langchain==0.1.13
+langchain-google-genai==1.0.1
+langchain-chroma==0.1.0        # Modern wrapper for Chroma in LangChain
+google-generativeai==0.4.1
+
+# --- Database & Document Processing ---
+chromadb==0.4.24               # High-performance local vector DB
+pypdf==4.1.0                   # For PDF ingestion
+
+# Basic installation for markdown and text
+unstructured
+markdown

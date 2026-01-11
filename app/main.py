@@ -1,11 +1,13 @@
 from typing import Dict
 
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from app.services.rag_service import RAGService
 
 
 app = FastAPI()
 security = HTTPBasic()
+rag_service = RAGService()
 
 # Dummy user database
 users_db: Dict[str, Dict[str, str]] = {
@@ -14,7 +16,7 @@ users_db: Dict[str, Dict[str, str]] = {
     "Sam": {"password": "financepass", "role": "finance"},
     "Peter": {"password": "pete123", "role": "engineering"},
     "Sid": {"password": "sidpass123", "role": "marketing"},
-    "Natasha": {"passwoed": "hrpass123", "role": "hr"}
+    "Natasha": {"password": "hrpass123", "role": "hr"}
 }
 
 
@@ -23,7 +25,7 @@ def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
     username = credentials.username
     password = credentials.password
     user = users_db.get(username)
-    if not user or user["password"] != password:
+    if not user or user.get("password") != password:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     return {"username": username, "role": user["role"]}
 
@@ -39,8 +41,15 @@ def login(user=Depends(authenticate)):
 def test(user=Depends(authenticate)):
     return {"message": f"Hello {user['username']}! You can now chat.", "role": user["role"]}
 
-
 # Protected chat endpoint
 @app.post("/chat")
 def query(user=Depends(authenticate), message: str = "Hello"):
-    return "Implement this endpoint."
+    # user["role"] comes from the authenticate dependency in your starter code
+    result = rag_service.get_response(message, user["role"])
+    
+    # We return the answer and the sources for citation [cite: 33]
+    return {
+        "answer": result["answer"],
+        "sources": [doc.metadata.get("source") for doc in result["context"]],
+        "role": user["role"]
+    }
