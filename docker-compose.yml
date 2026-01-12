@@ -1,0 +1,23 @@
+version: '3.8'
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile_api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env  # Injects your GOOGLE_API_KEY securely
+    volumes:
+      - ./chroma_db:/app/chroma_db # Persists your DB even if container stops
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile_ui
+    ports:
+      - "8501:8501"
+    environment:
+      - BACKEND_URL=http://backend:8000 # Modular connection using service name
+    depends_on:
+      - backend

@@ -1,0 +1,24 @@
+# Use a lightweight Python image
+FROM python:3.10-slim
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy only the requirements first to leverage Docker's cache
+COPY requirements.txt .
+
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the rest of your backend code
+COPY ./app ./app
+COPY ./resources ./resources
+
+# Copy the chroma_db directory to the container
+COPY ./chroma_db ./chroma_db
+
+# Expose the port Cloud Run expects
+EXPOSE 8080
+
+# Start the server, binding to 0.0.0.0 so it's accessible externally
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
