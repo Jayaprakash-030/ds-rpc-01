@@ -6,14 +6,20 @@ python-dotenv==1.0.1
 
 # --- LangChain & Gemini Ecosystem ---
 langchain==0.1.13
+langchain-core==0.1.53
 langchain-google-genai==1.0.1
-langchain-chroma==0.1.0        # Modern wrapper for Chroma in LangChain
+langchain-chroma==0.1.0        
 google-generativeai==0.4.1
 
 # --- Database & Document Processing ---
-chromadb==0.4.24               # High-performance local vector DB
-pypdf==4.1.0                   # For PDF ingestion
+chromadb==0.4.24               
+pypdf==4.1.0                  
 
 # Basic installation for markdown and text
 unstructured
 markdown
+
+# Eval Packages
+ragas>=0.1.7         
+datasets             
+langchain-community
