@@ -1,0 +1,251 @@
+id,question,ground_truth,bot_answer,retrieved_chunks,score_retrieval_quality,score_llm_faithfulness,score_answer_relevance,error_type
+Q_0,I need to find information about taking time off from work. Which section of the employee handbook should I refer to?,"You should refer to section 3, ""Leave Policies,"" to find information regarding time off from work.","To find information about taking time off from work, you should refer to **Section 3: Leave Policies** of the employee handbook.
+
+This section includes details on:
+*   **Types of Leave:** Including Privilege/Annual Leave, Sick Leave, Casual Leave, Maternity/Paternity Leave, and more.
+*   **Leave Application Process:** Instructions on how to apply via the HRMS portal, notice periods, and documentation requirements.",['employee_handbook.md'],5,5,5,none
+Q_1,What is the core mission statement of FinSolve Technologies?,"FinSolve Technologies' mission is to deliver high-quality, sustainable products and services that create value for our stakeholders.","The core mission of FinSolve Technologies is to deliver high-quality, sustainable products and services that create value for its stakeholders.","['employee_handbook.md', 'engineering_master_doc.md']",5,5,5,none
+Q_2,Could you list all our core values and describe what 'Respect' means in our company?,"Our core values are Integrity, Respect, Innovation, Customer Focus, and Accountability. Respect means we value diversity and treat everyone with dignity.","At FinSolve Technologies, our core values are:
+
+*   **Integrity**: Acting with honesty and transparency.
+*   **Respect**: Valuing diversity and treating everyone with dignity.
+*   **Innovation**: Encouraging creativity and continuous improvement.
+*   **Customer Focus**: Keeping customers at the heart of everything we do.
+*   **Accountability**: Taking responsibility for our actions and results.
+
+**What 'Respect' means in our company:**
+Respect involves valuing diversity and treating everyone with dignity. According to our Code of Conduct, this includes:
+*   Treating all colleagues, clients, and vendors with courtesy.
+*   Maintaining a positive, inclusive, and harassment-free environment.
+*   Upholding the confidentiality of company information.
+*   Ensuring a workplace free from discrimination based on gender, caste, religion, age, disability, sexual orientation, or any other protected characteristic.",['employee_handbook.md'],5,5,5,none
+Q_3,What are the core commitments and values that FinSolve Technologies emphasizes?,"FinSolve Technologies is committed to ethical business practices, social responsibility, and fostering a culture of learning and growth.","FinSolve Technologies emphasizes the following core commitments and values:
+
+*   **Ethical Business:** A commitment to conducting business with integrity.
+*   **Social Responsibility:** A focus on contributing positively to society.
+*   **Culture of Learning and Growth:** Fostering an environment that encourages continuous development.
+*   **Innovation:** Empowering businesses and individuals through innovative technology solutions.
+*   **Quality and Sustainability:** Delivering high-quality, sustainable products and services that create value for stakeholders.","['employee_handbook.md', 'engineering_master_doc.md']",5,5,5,none
+Q_4,When did Aadhya Patel join the company and what is her current performance rating?,Aadhya Patel joined the company on 2018-11-20 and her current performance rating is 3.,"Aadhya Patel joined the company on November 20, 2018, and her current performance rating is 3.",['hr_data.csv'],5,5,5,none
+Q_5,What is Isha Chowdhury's current role and how many leaves does she have remaining?,Isha Chowdhury's current role is Credit Officer and she has 8 leaves remaining.,"Based on the records for FinSolve Technologies, there are two employees named Isha Chowdhury:
+
+1.  **Isha Chowdhury (Employee ID: FINEMP1019):**
+    *   **Current Role:** Relationship Manager
+    *   **Leaves Remaining:** 11
+
+2.  **Isha Chowdhury (Employee ID: FINEMP1001):**
+    *   **Current Role:** Credit Officer
+    *   **Leaves Remaining:** 8",['hr_data.csv'],5,5,5,none
+Q_6,What is Sakshi Malhotra's current leave balance and performance rating?,Sakshi Malhotra currently has a leave balance of 21 days and her performance rating is 2.,"There are two employees named Sakshi Malhotra in our records:
+
+1.  **Sakshi Malhotra (Credit Officer, Finance - Mumbai, ID: FINEMP1081):**
+    *   **Leave Balance:** 25
+    *   **Performance Rating:** 3
+
+2.  **Sakshi Malhotra (Relationship Manager, Sales - Ahmedabad, ID: FINEMP1002):**
+    *   **Leave Balance:** 21
+    *   **Performance Rating:** 2",['hr_data.csv'],5,5,5,none
+Q_7,What is Krishna Malhotra's performance rating and their last review date?,"Krishna Malhotra has a performance rating of 1, and their last review date was 2024-07-24.","There are two employees named Krishna Malhotra in our records:
+
+1.  **Krishna Malhotra (Sales Manager, FINEMP1083):**
+    *   **Performance Rating:** 1
+    *   **Last Review Date:** 2024-01-21
+
+2.  **Krishna Malhotra (Business Analyst, FINEMP1003):**
+    *   **Performance Rating:** 1
+    *   **Last Review Date:** 2024-07-24",['hr_data.csv'],5,5,5,none
+Q_8,"What are Aadhya Saxena's professional details including her role, department, and current location?","Aadhya Saxena is a Marketing Manager in the Marketing department, located in Lucknow.","Aadhya Saxena's professional details are as follows:
+*   **Role:** Marketing Manager
+*   **Department:** Marketing
+*   **Location:** Lucknow",['hr_data.csv'],5,5,5,none
+Q_9,What is Shaurya Joshi's current leave status and their recent performance review information?,"Shaurya Joshi has a current leave balance of 4 days and has taken 4 leaves. Their last performance review was on 2024-09-15, where they received a performance rating of 2. Their attendance percentage is 82.77%.","There are three employees named Shaurya Joshi at FinSolve Technologies. Here are their current leave statuses and recent performance review details:
+
+**1. Shaurya Joshi (Financial Analyst, Finance - FINEMP1005)**
+*   **Leave Status:** 4 leaves taken, with a remaining leave balance of 4.
+*   **Performance Review:** Received a performance rating of 2 during the last review on September 15, 2024.
+
+**2. Shaurya Joshi (Relationship Manager, Sales - FINEMP1041)**
+*   **Leave Status:** 6 leaves taken, with a remaining leave balance of 7.
+*   **Performance Review:** Received a performance rating of 1 during the last review on July 30, 2024.
+
+**3. Shaurya Joshi (Marketing Manager, Marketing - FINEMP1046)**
+*   **Leave Status:** 17 leaves taken, with a remaining leave balance of 19.
+*   **Performance Review:** Received a performance rating of 1 during the last review on April 13, 2024.",['hr_data.csv'],5,5,5,none
+Q_10,What is Sara Sharma's current leave balance and how many leaves has she taken?,Sara Sharma has a leave balance of 11 days and has taken 10 leaves.,Sara Sharma's current leave balance is **11** and she has taken **10** leaves.,"['hr_data.csv', 'employee_handbook.md']",5,5,5,none
+Q_11,Could you provide Prisha Mehta's current salary and her available leave balance?,"Prisha Mehta's current salary is 1,149,019.58 and her available leave balance is 11 days.","Prisha Mehta's current salary is 1,149,019.58, and her available leave balance is 11.","['hr_data.csv', 'employee_handbook.md']",5,5,5,none
+Q_12,Can you provide a summary of Aadhya Chowdhury's key employment and performance details?,"Aadhya Chowdhury (employee ID: FINEMP1008) works as Customer Support in the Operations department, located in Mumbai. She joined on February 12, 2019, and her manager's ID is FINEMP1007. Her current leave balance is 7, having taken 5 leaves, with an attendance percentage of 96.92%. She achieved a performance rating of 5 during her last review on August 7, 2024.","Based on the records for FinSolve Technologies, here is a summary of **Aadhya Chowdhury's** employment and performance details:
+
+**Employment Details:**
+*   **Employee ID:** FINEMP1008
+*   **Role:** Customer Support
+*   **Department:** Operations
+*   **Location:** Mumbai
+*   **Date of Joining:** February 12, 2019
+*   **Manager ID:** FINEMP1007
+*   **Salary:** 370,315.98
+
+**Performance & Attendance:**
+*   **Performance Rating:** 5 (Top rating)
+*   **Attendance:** 96.92%
+*   **Last Review Date:** August 7, 2024
+*   **Leave Status:** She has taken 5 leaves and maintains a leave balance of 7.",['hr_data.csv'],5,5,5,none
+Q_13,What is Sai Gupta's current performance rating and when was their last review conducted?,"Sai Gupta's current performance rating is 2, and their last performance review was conducted on April 22, 2025.","Sai Gupta's current performance rating is **2**, and their last review was conducted on **April 22, 2025**.",['hr_data.csv'],5,5,5,none
+Q_14,"What was FinNova's marketing spend in Q1 2024, and what were the key strategic objectives outlined in the report?","FinNova's marketing spend for Q1 2024 was $2 million. The key strategic objectives emphasized in the report were efforts to expand into Europe, launch the InstantPay feature, and boost social media engagement. The foundational focus for the quarter was also on building robust marketing infrastructure to support aggressive expansion and enhance customer acquisition channels.","Based on the Comprehensive Marketing Report for Q1 2024, FinNova's marketing spend was **$2 million**.
+
+The key strategic objectives outlined in the report included:
+*   **European Market Entry:** Launching targeted campaigns in the UK, Germany, and France to build brand awareness and capture market share.
+*   **InstantPay Launch:** Introducing the InstantPay feature to attract new users and drive adoption.
+*   **Social Media Amplification:** Enhancing content strategies across platforms to increase engagement and foster community growth.
+*   **Infrastructure and Growth:** Building a robust marketing infrastructure and a scalable framework to support aggressive expansion and strengthen customer acquisition channels.
+*   **Brand Visibility:** Enhancing brand visibility to establish FinNova as a competitive player in new markets.",['marketing_report_q1_2024.md'],5,5,5,none
+Q_15,What were FinNova's primary marketing initiatives and strategic focus for Q1 2024?,"In Q1 2024, FinNova's strategic focus was on establishing a scalable framework for growth, strengthening customer acquisition channels, and enhancing brand visibility. Key initiatives included launching targeted campaigns for European Market Entry in the UK, Germany, and France, introducing the InstantPay feature, and enhancing social media content strategies for amplification.","Based on the Q1 2024 Marketing Report, FinNova’s primary marketing initiatives and strategic focus were as follows:
+
+**Strategic Focus:**
+*   **Building a Scalable Framework:** Establishing a robust marketing infrastructure to support aggressive expansion.
+*   **Customer Acquisition:** Strengthening acquisition channels to drive user growth.
+*   **Brand Visibility:** Enhancing the brand's presence and visibility in the market.
+
+**Primary Marketing Initiatives:**
+*   **European Market Entry:** Launching targeted awareness and market-share campaigns in the UK, Germany, and France.
+*   **InstantPay Launch:** Introducing the InstantPay feature, a seamless payment solution designed to attract new users.
+*   **Social Media Amplification:** Enhancing content strategies across social platforms to increase engagement and foster community growth.
+
+These initiatives were supported by a $2 million marketing budget aimed at maximizing ROI and aligning with revenue goals.",['marketing_report_q1_2024.md'],5,5,5,none
+Q_16,What was the total marketing spend projected for Q1 2024 and how was it allocated across different channels?,"The total marketing spend projected for Q1 2024 was $2 million. This budget was allocated as follows: 50% to digital advertising, 20% to product launch campaigns, 15% to social media marketing, 10% to content marketing, and 5% to event sponsorships.","I don't know. The provided context includes the total marketing budget for the full year of 2024 and the specific spend for Q4 2024, but it does not contain information regarding the projected spend or allocation for Q1 2024.","['marketing_report_2024.md', 'market_report_q4_2024.md']",2,5,3,retrieval_error
+Q_17,What is our target Cost Per Acquisition (CPA) and how is it calculated?,"Our target Cost Per Acquisition (CPA) is $13.33. This is calculated by dividing the marketing spend ($2M) by the customer acquisition target (150,000).","Based on the performance benchmarks for FinSolve Technologies, the target Cost Per Acquisition (CPA) and its calculation vary by quarter:
+
+*   **Q1 Target**: **$13.33**
+    *   **Calculation**: Marketing spend divided by the customer acquisition target ($2M / 150,000).
+*   **Q2 Target**: **$12.50**
+    *   **Calculation**: Marketing spend divided by the customer acquisition target ($2.5M / 200,000).
+*   **Q4 Target**: **$11.36**
+    *   **Calculation**: Marketing spend divided by the customer acquisition target ($2.5M / 220,000).","['market_report_q4_2024.md', 'marketing_report_q2_2024.md', 'marketing_report_q1_2024.md']",5,5,4,none
+Q_18,"What specific actions were taken to expand brand presence in Europe during Q1 2024, and what was the direct measurable outcome from the conference sponsorships?","To expand brand presence in Europe during Q1 2024, localized campaigns were launched in the UK, Germany, and France, focusing on digital ads and partnerships with local fintech influencers. Additionally, the company sponsored two major fintech conferences in London and Berlin, which directly generated 200 qualified leads.","Based on the provided context, I do not have information regarding specific actions or outcomes for **Q1 2024**. The report details activities for **Q2 2024** and **Q4 2024**.
+
+For Q2 2024, however, the specific actions taken in Europe (London and Berlin) included **event sponsorships** through conference activations, which resulted in a direct measurable outcome of **500,000 impressions**.","['marketing_report_q2_2024.md', 'marketing_report_q1_2024.md', 'market_report_q4_2024.md']",3,5,2,retrieval_error
+Q_19,What were the primary focus areas of the Q4 2024 marketing efforts?,"The Q4 2024 marketing efforts primarily focused on market penetration, strengthening customer relationships, and optimizing marketing investments. These strategies were crucial for solidifying market position, enhancing customer engagement, and setting the stage for robust growth.","Based on the Q4 2024 Marketing Report, the primary focus areas of the marketing efforts were:
+
+*   **Market Penetration:** Finalizing penetration in key demographics.
+*   **Customer Relationships:** Strengthening relationships through personalized engagement, enhanced loyalty programs, and personalized offers to boost retention.
+*   **Strategic Growth:** Laying the groundwork for sustained growth in 2025 and optimizing marketing investments to maximize ROI.
+*   **Market Expansion:** Strengthening B2B marketing efforts to increase enterprise client acquisition, particularly within the technology and finance sectors.",['market_report_q4_2024.md'],5,5,5,none
+Q_20,What specific initiatives were implemented in Q4 2024 to enhance customer engagement and expand the market?,"To enhance customer engagement in Q4 2024, initiatives included strengthening customer loyalty programs and introducing personalized offers to boost retention. For market expansion, B2B marketing efforts were increased to acquire more enterprise clients, specifically targeting the technology and finance sectors.","In Q4 2024, FinSolve Technologies implemented the following specific initiatives to enhance customer engagement and expand the market:
+
+*   **Customer Engagement:** The company enhanced its customer loyalty programs and introduced personalized offers designed to boost retention.
+*   **Market Expansion:** The company strengthened its B2B marketing efforts to increase enterprise client acquisition, with a particular focus on the technology and finance sectors.",['market_report_q4_2024.md'],5,5,5,none
+Q_21,What was the specific financial allocation for digital advertising within the Q4 marketing budget?,"The total Q4 marketing spend was $2.5 million. Of this, 40% was allocated to digital advertising, meaning the specific financial allocation for digital advertising was $1 million.","Based on the provided context, I don't know the specific financial allocation for digital advertising within the Q4 marketing budget. 
+
+While the text states that the total marketing spend for Q4 was **$2.5 million** and included multi-channel campaigns across digital platforms, it does not provide a specific dollar breakdown for the digital advertising portion of that Q4 spend. The only specific digital marketing figure mentioned is the **$7 million** allocated for the entire 2024 fiscal year.","['marketing_report_2024.md', 'market_report_q4_2024.md']",2,5,3,retrieval_error
+Q_22,"What were the specific targets for Conversion Rate, ROI, Customer Retention Rate, and Cost Per Acquisition in Q4, and how was CPA determined?","The specific Q4 targets were: Conversion Rate Target of 15.0%, ROI Target of 4.4x, and a Customer Retention Rate of 85%. The Cost Per Acquisition (CPA) target was $11.36, which was derived from dividing the marketing spend ($2.5M) by the customer acquisition target (220,000).","For Q4 at FinSolve Technologies, the specific performance benchmarks were:
+
+*   **Conversion Rate Target**: 15.0%
+*   **ROI Target**: 4.4x
+*   **Customer Retention Rate**: 85%
+*   **Cost Per Acquisition (CPA)**: $11.36
+
+**How CPA was determined:**
+The CPA was derived by dividing the total marketing spend by the customer acquisition target ($2.5M / 220,000).","['market_report_q4_2024.md', 'marketing_report_q3_2024.md', 'marketing_report_q2_2024.md']",5,5,5,none
+Q_23,What initiatives were undertaken in Q4 to increase enterprise client sign-ups and what was the measurable outcome?,"To increase enterprise client sign-ups in Q4, we developed targeted account-based marketing (ABM) campaigns specifically engaging clients in the technology, finance, and healthcare sectors. Additionally, we hosted virtual roundtables and webinars to showcase our solutions. These efforts led to a 15% increase in enterprise leads.","In Q4, FinSolve Technologies undertook the following initiatives to increase enterprise client sign-ups:
+
+*   **Account-Based Marketing (ABM):** Developed targeted ABM campaigns specifically to engage enterprise clients in the technology, finance, and healthcare sectors.
+*   **Virtual Events:** Hosted virtual roundtables and webinars to showcase the company's solutions.
+
+**Measurable Outcome:**
+These efforts resulted in a **15% increase in enterprise leads**.","['market_report_q4_2024.md', 'marketing_report_2024.md']",5,5,5,none
+Q_24,What were the main strategic objectives and areas of focus for the company during Q2 2024?,"During Q2 2024, the company's main strategic objectives were reinforcing brand dominance in existing markets and strategically expanding into Southeast Asia. Additionally, the quarter focused on driving customer acquisition, enhancing engagement, and optimizing marketing investments.","During Q2 2024, FinSolve Technologies focused on two primary strategic objectives: solidifying the brand's position in core markets and establishing a presence in high-growth Southeast Asian markets (specifically Indonesia, Thailand, and Vietnam).
+
+The main areas of focus and key initiatives included:
+*   **Brand Reinforcement:** Launching integrated campaigns, targeted advertising, and customer engagement to maintain leadership in existing markets.
+*   **Southeast Asia Expansion:** Implementing localized marketing campaigns using digital and influencer-driven strategies to capture market share.
+*   **Engagement Optimization:** Enhancing email retargeting campaigns to increase conversions and maximize customer lifetime value.
+
+These objectives were supported by a $2.5 million marketing spend, aimed at balancing customer acquisition and retention while targeting a 2.4x ROI.","['market_report_q4_2024.md', 'marketing_report_q2_2024.md']",5,5,5,none
+Q_25,"What was the total marketing spend for Q2 2024, and what was the target ROI for these efforts?","The total marketing spend for Q2 2024 was $2.5 million, allocated to achieve a balanced approach between acquisition and retention while targeting a 2.4x ROI.","I don't know. The provided context includes the total marketing budget for 2024 ($15M) and the specific spend for Q4 2024 ($2.5M), but it does not contain information regarding the marketing spend or target ROI for Q2 2024.","['marketing_report_2024.md', 'market_report_q4_2024.md']",2,5,3,retrieval_error
+Q_26,How was the $2.5 million marketing spend for Q2 2024 allocated across different channels?,"The $2.5 million marketing spend for Q2 2024 was allocated as follows: 45% for digital advertising, 20% for influencer partnerships, 15% for email marketing, 10% for content marketing, and 10% for event sponsorships.","Based on the provided context, the specific numerical breakdown (in dollars or percentages) of how the **$2.5 million** marketing spend for **Q2 2024** was allocated across different channels is not mentioned.
+
+The context only specifies that the budget was allocated to achieve a ""**balanced approach between acquisition and retention**"" and supported the following initiatives:
+
+*   **Brand Reinforcement:** Targeted advertising and customer engagement to maintain leadership in existing markets.
+*   **Southeast Asia Expansion:** Localized digital and influencer-driven strategies in Indonesia, Thailand, and Vietnam.
+*   **Engagement Optimization:** Email retargeting campaigns to boost conversions and customer lifetime value.
+
+While there is a detailed allocation provided for the total 2024 marketing budget ($15M), a specific channel-by-channel breakdown for the Q2 portion is not provided.","['marketing_report_2024.md', 'market_report_q4_2024.md', 'marketing_report_q2_2024.md']",4,5,3,none
+Q_27,What is our target Cost Per Acquisition (CPA) and how was it derived?,"Our target Cost Per Acquisition (CPA) is $12.50. This figure was derived by dividing the marketing spend by the customer acquisition target, specifically $2.5M by 200,000.","Based on the performance benchmarks for FinSolve Technologies, the target Cost Per Acquisition (CPA) and its derivation vary by quarter:
+
+*   **Q1**: The target CPA was **$13.33**, derived from the marketing spend divided by the customer acquisition target (**$2M / 150,000**).
+*   **Q2**: The target CPA was **$12.50**, derived from the marketing spend divided by the customer acquisition target (**$2.5M / 200,000**).
+*   **Q4**: The target CPA was **$11.36**, derived from the marketing spend divided by the customer acquisition target (**$2.5M / 220,000**).","['marketing_report_q2_2024.md', 'market_report_q4_2024.md', 'marketing_report_q1_2024.md']",5,5,4,none
+Q_28,"What actions were taken to increase market share in Southeast Asia during Q2, and what was the measured impact on website traffic?","To increase market share in Southeast Asia, localized digital campaigns were launched in Indonesia, Thailand, and Vietnam, tailored to cultural and consumer preferences. Additionally, partnerships were established with regional e-commerce platforms. These initiatives resulted in a 15% increase in website traffic from Southeast Asia.","To increase market share in Southeast Asia during Q2 2024, FinSolve Technologies took the following actions:
+
+*   **Localized Digital Campaigns:** Launched campaigns in Indonesia, Thailand, and Vietnam that were tailored to specific cultural and consumer preferences.
+*   **E-commerce Partnerships:** Partnered with regional e-commerce platforms.
+*   **Influencer Collaborations:** Collaborated with 30 influencers across Southeast Asia and existing markets, focusing on the lifestyle and tech niches.
+
+**Measured Impact:**
+These initiatives resulted in a **15% increase in website traffic** from Southeast Asia.",['marketing_report_q2_2024.md'],5,5,5,none
+Q_29,What were the primary strategic focus areas for the company during Q3 2024?,"During Q3 2024, the company's strategic focus was on deepening customer loyalty and expanding its footprint in Latin American markets. This was driven by prioritizing customer retention, forging new merchant partnerships, and enhancing brand visibility through localized campaigns.",I don't know. The provided context only contains information regarding the marketing strategies and performance for Q4 2024.,['market_report_q4_2024.md'],1,5,1,retrieval_error
+Q_30,What were the two main marketing priorities for Q3 2024?,"In Q3 2024, the marketing strategy revolved around two key priorities: strengthening customer retention to ensure long-term loyalty and penetrating Latin American markets to diversify the customer base.","I don't know. The provided context only contains information regarding the marketing report and priorities for **Q4 2024**, and does not mention the priorities for Q3 2024.",['market_report_q4_2024.md'],1,5,1,retrieval_error
+Q_31,Can you detail the allocation of the $2 million marketing spend for Q3 2024?,"For Q3 2024, the $2 million marketing spend was allocated across digital advertising (35%), loyalty programs (20%), event sponsorships (20%), merchant partnerships (15%), and content marketing (10%).","I don't know. The provided context includes details for Q2 2024 and Q4 2024, as well as the total budget for the year 2024, but it does not contain information regarding the marketing spend or its allocation for Q3 2024.","['market_report_q4_2024.md', 'marketing_report_2024.md', 'marketing_report_q2_2024.md']",1,5,2,retrieval_error
+Q_32,What was the target Cost Per Acquisition (CPA) for Q3 and how was it determined?,"The target Cost Per Acquisition (CPA) for Q3 was $11.11. It was calculated by dividing the total marketing spend ($2M) by the customer acquisition target (180,000 customers).","For Q3, the target Cost Per Acquisition (CPA) was **$11.11**. 
+
+It was determined by dividing the total marketing spend by the customer acquisition target ($2,000,000 / 180,000).","['marketing_report_q3_2024.md', 'market_report_q4_2024.md', 'marketing_report_q2_2024.md']",5,5,5,none
+Q_33,"What specific initiatives were implemented in Q3 2024 to strengthen customer retention, and what was their measurable impact?","In Q3 2024, customer retention was strengthened by launching a points-based loyalty program, which offers redeemable rewards for purchases and referrals, and by implementing targeted email campaigns with personalized offers. These initiatives led to a 10% increase in repeat purchases compared to Q2.","In Q3 2024, FinSolve Technologies implemented **enhanced loyalty programs** as a specific initiative to strengthen customer retention. These programs were designed to reward repeat customers and reduce churn.
+
+Regarding the measurable impact, the report states that these efforts **""delivered measurable results""** and were strategically allocated to maximize ROI; however, the provided text does not list specific data points or figures for the retention metrics achieved.","['marketing_report_q3_2024.md', 'market_report_q4_2024.md']",4,5,3,none
+Q_34,"What was FinSolve Technologies's revenue trajectory in 2024, and what other financial performance indicators showed consistent improvement during the year?","In 2024, FinSolve Technologies Inc. saw its revenue increase from $2.1 billion in Q1 to $2.6 billion in Q4. Alongside this growth, the company also achieved consistent improvements in gross margin, operating income, and net income throughout the year.","In 2024, FinSolve Technologies experienced a record-breaking revenue trajectory, reaching a total of **$9.4 billion**, which represented a **28% year-over-year (YoY) increase**.
+
+In addition to revenue growth, several other financial performance indicators showed consistent improvement throughout the year:
+
+*   **Gross Margin:** Improved steadily from 58% in Q1 to 64% in Q4, driven by enhanced pricing strategies and operational efficiencies.
+*   **Net Income:** Grew to $1.15 billion, a 14% YoY increase, supported by cost discipline and revenue growth.
+*   **Cash Flow:** The company reported strong cash flow, positioning it well for global opportunities in 2025.
+*   **Operational Efficiency:** The company achieved improved margins and profitability through cost-saving measures and strategic focus, despite pressures in vendor-related costs and software subscriptions.","['quarterly_financial_report.md', 'financial_summary.md']",5,5,5,none
+Q_35,"What was the total marketing spend for Q1 2024, and what were the primary objectives for this expenditure?","The marketing spend for Q1 2024 was $500 million. This expenditure was primarily focused on digital marketing campaigns and brand awareness initiatives, specifically to support the company's entry into the European market.","Based on the provided context, I don't know the answer. The report contains information regarding the total marketing budget for the full year 2024 and specific details for **Q4 2024**, but it does not specify the spend or objectives for **Q1 2024**.","['marketing_report_2024.md', 'market_report_q4_2024.md']",2,5,3,retrieval_error
+Q_36,"Which expense categories experienced a year-over-year increase, and what were their respective percentages of increase and the main reasons provided?","Two expense categories experienced a year-over-year increase: Employee Benefits & HR, which was up 15% YoY due to increased staffing and employee development programs, and Software Subscriptions, which was up 18% YoY reflecting expanded reliance on cloud-based platforms for operational scalability.","Based on the provided documents, the following expense categories experienced a year-over-year (YoY) increase:
+
+*   **Employee Benefits & HR**: 
+    *   **Increase**: 15% YoY.
+    *   **Reason**: Increased staffing and employee development programs.
+*   **Software Subscriptions**: 
+    *   The context provides two different data points for this category:
+        1.  **Increase**: 18% YoY (at a total of $45 million). 
+            *   **Reason**: Expanded reliance on cloud-based platforms for operational scalability.
+        2.  **Increase**: 22% from 2023 (at a total of $25 million). 
+            *   **Reason**: Heavy reliance on cloud-based tools and SaaS subscriptions.
+
+Additionally, the analysis notes that the **Dinner and Training** categories accounted for an ""increasing share"" of the marketing budget due to their importance for brand positioning, though specific YoY percentage increases for these categories were not provided.","['quarterly_financial_report.md', 'financial_summary.md']",5,5,5,none
+Q_37,What was FinSolve Technologies's cash flow from operations and what factors contributed to its performance?,"FinSolve Technologies reported a Cash Flow from Operations of $300 million, which represents a 10% increase year-over-year. This performance was driven by strong revenue and efficient working capital management.","Based on the provided context, there are two different figures reported for FinSolve Technologies's cash flow from operations:
+
+*   **$300 million:** This figure was up 10% year-over-year (YoY). The factors contributing to this performance were **strong revenue** and **efficient working capital management**.
+*   **$1.5 billion:** This figure was up 14% YoY. This performance enabled the company to allocate $260 million toward investments in R&D, market expansion, and product development.","['quarterly_financial_report.md', 'financial_summary.md']",5,5,4,none
+Q_38,What are the primary financial solutions offered by FinSolve Technologies and where is the company headquartered?,"FinSolve Technologies offers innovative financial solutions including digital banking, payment processing, wealth management, and enterprise financial analytics. The company is headquartered in Bangalore, India.","FinSolve Technologies is headquartered in **Bangalore, India**.
+
+The primary financial solutions offered by the company include:
+*   Digital banking
+*   Payment processing
+*   Wealth management
+*   Enterprise financial analytics","['employee_handbook.md', 'engineering_master_doc.md']",5,5,5,none
+Q_39,What is the main purpose of this engineering document?,"This engineering document serves as a comprehensive guide for engineering teams, stakeholders, and partners to ensure alignment with FinSolve's mission: ""To empower financial freedom through secure, scalable, and innovative technology solutions.""","Based on the provided document, the main purpose of this engineering document is to provide a comprehensive overview and framework for FinSolve Technologies' technical operations. Specifically, it covers:
+
+*   **System architecture and infrastructure**
+*   **Software development lifecycle (SDLC)** and design methodologies (such as UML, C4 models, and OpenAPI specifications)
+*   **Technology stack** and UI/UX design standards
+*   **Security and compliance frameworks**
+*   **Testing, quality assurance, and deployment (DevOps) practices**
+*   **Monitoring, maintenance protocols, and the future technology roadmap**",['engineering_master_doc.md'],5,5,4,none
+Q_40,What specific topics are detailed within the scope of this document?,"This document covers system architecture and infrastructure, software development lifecycle (SDLC), technology stack, security and compliance frameworks, testing and quality assurance methodologies, deployment and DevOps practices, monitoring and maintenance protocols, and the future technology roadmap.","Based on the document provided, the specific topics detailed within its scope are:
+
+*   System architecture and infrastructure
+*   Software development lifecycle (SDLC)
+*   Technology stack
+*   Security and compliance frameworks
+*   Testing and quality assurance methodologies
+*   Deployment and DevOps practices
+*   Monitoring and maintenance protocols
+*   Future technology roadmap","['engineering_master_doc.md', 'employee_handbook.md']",5,5,5,none
+Q_41,What specific changes were incorporated into version 1.1 of the document?,"Version 1.1 of the document, dated 2025-05-14 and authored by the Tech Architecture Council, introduced updated diagrams and modifications to the monitoring section.","Based on the document control table in section 1.4, the specific changes incorporated into version 1.1 of the document were:
+
+*   **Updated diagrams**
+*   **Updated monitoring section**
+
+This version was authored by the Tech Architecture Council and dated 2025-05-14.",['engineering_master_doc.md'],5,5,5,none
