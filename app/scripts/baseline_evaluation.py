@@ -21,7 +21,10 @@ DEFAULT_OUTPUT_PATH = REPO_ROOT / "results" / "quality_baseline_scores.csv"
 
 
 def run_quality_baseline(config: RAGConfig, api_url: str, dataset_path: Path, output_path: Path):
-    df = pd.read_csv(dataset_path)
+    try:
+        df = pd.read_csv(dataset_path)
+    except UnicodeDecodeError:
+        df = pd.read_csv(dataset_path, encoding="latin1")
     results = []
 
     print(f"Starting Intelligence Baseline | Model: {config.llm_model} | K: {config.top_k}")

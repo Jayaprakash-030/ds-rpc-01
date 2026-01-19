@@ -2,11 +2,13 @@ import subprocess
 import sys
 from pathlib import Path
 
-from app.config.experiment_config import RAGConfig
-from app.utils.mlflow_tracker import RAGExperimentTracker
-
 BASE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = BASE_DIR.parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from app.config.experiment_config import RAGConfig
+from app.utils.mlflow_tracker import RAGExperimentTracker
 
 INGEST_SCRIPT = REPO_ROOT / "app" / "scripts" / "ingest_docs.py"
 BASELINE_SCRIPT = REPO_ROOT / "app" / "scripts" / "baseline_evaluation.py"
@@ -96,18 +98,38 @@ def run_experiment_pipeline(cfg: RAGConfig, run_name: str, dataset_type: str):
             print(f" Run '{run_name}' failed. Moving to next experiment...")
 
 if __name__ == "__main__":
-    # Define your Experiment Sweep (Hyperparameter Grid)
-    # Experiment 01: Testing if larger chunks fix Multi-Hop reasoning
+    # Define experiment sweep (run on both datasets)
     configs_to_test = [
-        {"chunk_size": 1000, "top_k": 5, "type": "multihop"},
-        {"chunk_size": 1000, "top_k": 10, "type": "multihop"},
-        {"chunk_size": 1500, "top_k": 7, "type": "multihop"}
+        # Chunk size impact
+        {"chunk_size": 1500, "top_k": 7, "temperature": 0.0},
+        {"chunk_size": 2000, "top_k": 7, "temperature": 0.0},
+        {"chunk_size": 500, "top_k": 15, "temperature": 0.0},
+        # Top-k retrieval
+        {"chunk_size": 1000, "top_k": 10, "temperature": 0.0},
+        {"chunk_size": 1000, "top_k": 15, "temperature": 0.0},
+        {"chunk_size": 1500, "top_k": 10, "temperature": 0.0},
+        # Temperature for reasoning
+        {"chunk_size": 1000, "top_k": 10, "temperature": 0.3},
+        {"chunk_size": 1000, "top_k": 10, "temperature": 0.5},
+        # Same set with gemini-3-pro-preview
+        {"chunk_size": 1500, "top_k": 7, "temperature": 0.0, "llm_model": "gemini-3-pro-preview"},
+        {"chunk_size": 2000, "top_k": 7, "temperature": 0.0, "llm_model": "gemini-3-pro-preview"},
+        {"chunk_size": 500, "top_k": 15, "temperature": 0.0, "llm_model": "gemini-3-pro-preview"},
+        {"chunk_size": 1000, "top_k": 10, "temperature": 0.0, "llm_model": "gemini-3-pro-preview"},
+        {"chunk_size": 1000, "top_k": 15, "temperature": 0.0, "llm_model": "gemini-3-pro-preview"},
+        {"chunk_size": 1500, "top_k": 10, "temperature": 0.0, "llm_model": "gemini-3-pro-preview"},
+        {"chunk_size": 1000, "top_k": 10, "temperature": 0.3, "llm_model": "gemini-3-pro-preview"},
+        {"chunk_size": 1000, "top_k": 10, "temperature": 0.5, "llm_model": "gemini-3-pro-preview"},
     ]
 
     for i, params in enumerate(configs_to_test):
         cfg = RAGConfig(
             chunk_size=params["chunk_size"],
-            top_k=params["top_k"]
+            top_k=params["top_k"],
+            temperature=params["temperature"],
+            llm_model=params.get("llm_model", RAGConfig.llm_model),
         )
-        run_name = f"Exp_{i}_CS{params['chunk_size']}_K{params['top_k']}"
-        run_experiment_pipeline(cfg, run_name, params["type"])
+        temp_tag = f"T{str(params['temperature']).replace('.', '')}"
+        model_tag = params.get("llm_model", RAGConfig.llm_model).replace("-", "").replace(".", "").replace("_", "")
+        run_name = f"Exp_{i}_CS{params['chunk_size']}_K{params['top_k']}_{temp_tag}_{model_tag}"
+        run_experiment_pipeline(cfg, run_name, "both")
