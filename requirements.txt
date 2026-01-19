@@ -23,3 +23,6 @@ markdown
 ragas>=0.1.7         
 datasets             
 langchain-community
+
+# experiment tracking and model management
+mlfow

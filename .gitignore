@@ -20,8 +20,14 @@ venv/
 
 # Vector DB
 chroma_db/
+vector_db/
 
 # Frontend
 node_modules/
 dist/
 build/
+
+results/*.csv
+results/*.json
+results/eval_errors.log
+mlflow_runs/

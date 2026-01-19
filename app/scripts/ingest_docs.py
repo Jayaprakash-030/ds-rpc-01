@@ -1,5 +1,6 @@
 import os
 import sys
+import argparse
 from pathlib import Path
 
 # Ensure project root is on sys.path so absolute imports work when running as a script
@@ -8,11 +9,12 @@ print(f"Root dir: {ROOT_DIR}")
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
+from app.config.experiment_config import RAGConfig
 from langchain_community.document_loaders import DirectoryLoader, TextLoader, CSVLoader
 from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
 from app.services.vector_store import VectorStoreManager
 
-def check_markdown_files(data_path="./resources/data"):
+def check_markdown_files(data_path):
     """Load markdown files while preserving header markers for splitting."""
     loader = DirectoryLoader(
         data_path,
@@ -64,7 +66,7 @@ def split_markdown_documents(docs):
     print(f"Total chunks created: {len(final_chunks)}")
     return final_chunks
 
-def load_hr_csv(csv_path="./resources/data/hr/hr_data.csv"):
+def load_hr_csv(csv_path):
     """Load the single HR CSV file."""
     loader = CSVLoader(file_path=csv_path)
     docs = loader.load()
@@ -78,30 +80,47 @@ def load_hr_csv(csv_path="./resources/data/hr/hr_data.csv"):
     print(f"Loaded {len(docs)} HR CSV rows.")
     return docs
 
-if __name__ == "__main__":
+def run_ingestion(config: RAGConfig):
+    print(f"--- Ingesting with Chunk Size: {config.chunk_size} ---")
+    data_dir = ROOT_DIR / "resources" / "data"
+    hr_csv_path = data_dir / "hr" / "hr_data.csv"
 
-    markdown_files = check_markdown_files()
+    markdown_files = check_markdown_files(str(data_dir))
     markdown_chunks = split_markdown_documents(markdown_files)
-    print(type(markdown_chunks))
-    print(markdown_chunks[12])
 
     # If a header-based chunk is still too big, break it down further
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=100,
+        chunk_size=config.chunk_size,
+        chunk_overlap=config.chunk_overlap,
     )
     final_markdown_chunks = text_splitter.split_documents(markdown_chunks)
     print(f"Total recursive chunks created: {len(final_markdown_chunks)}")
 
     # HR CSV pipeline
-    hr_csv_chunks = load_hr_csv()
+    hr_csv_chunks = load_hr_csv(str(hr_csv_path))
     print(f"Total HR CSV chunks: {len(hr_csv_chunks)}")
-    print(hr_csv_chunks[0])
 
     # Combine everything
     all_chunks = final_markdown_chunks + hr_csv_chunks
-
     print(f"Total final chunks: {len(all_chunks)}")
 
-    vm = VectorStoreManager()
-    vectorstore = vm.create_or_get_vectorstore(all_chunks)
+    # Save to a versioned directory so we don't overwrite baselines
+    model_short_name = config.embedding_model.split("/")[-1]
+    db_name = f"db_{model_short_name}_cs{config.chunk_size}"
+    db_path = ROOT_DIR / "vector_db" / db_name
+    db_path.mkdir(parents=True, exist_ok=True)
+
+    vm = VectorStoreManager(config=config, persist_directory=str(db_path))
+    vm.create_or_get_vectorstore(all_chunks)
+    return str(db_path)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--chunk_size", type=int, default=1000)
+    parser.add_argument("--chunk_overlap", type=int, default=150)
+    parser.add_argument("--embedding_model", type=str, default="models/embedding-001")
+    args = parser.parse_args()
+
+    config = RAGConfig(chunk_size=args.chunk_size, chunk_overlap=args.chunk_overlap, embedding_model=args.embedding_model)
+    run_ingestion(config)

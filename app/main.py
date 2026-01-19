@@ -1,14 +1,16 @@
 import os
-from typing import Dict
+from typing import Dict, Optional
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from app.config.experiment_config import RAGConfig
 from app.services.rag_service import RAGService
 
 
 app = FastAPI()
 security = HTTPBasic(auto_error=False)
-rag_service = RAGService()
+rag_config = RAGConfig()
+rag_service = RAGService(config=rag_config)
 
 AUTH_BYPASS = os.getenv("AUTH_BYPASS", "").lower() in {"1", "true", "yes"}
 
@@ -64,8 +66,19 @@ def query(user=Depends(authenticate), message: str = "Hello"):
 
 # Test-only endpoint (no auth)
 @app.post("/chat_test")
-def query_test(message: str = "Hello"):
-    result = rag_service.get_response(message, "c-level")
+def query_test(
+    message: str = "Hello",
+    top_k: Optional[int] = None,
+    temperature: Optional[float] = None,
+    db_path: Optional[str] = None,
+):
+    result = rag_service.get_response(
+        message,
+        "c-level",
+        top_k=top_k,
+        temperature=temperature,
+        persist_directory=db_path,
+    )
     return {
         "answer": result["answer"],
         "sources": list(dict.fromkeys(doc.metadata.get("source") for doc in result["context"])),
