@@ -48,6 +48,8 @@ def run_multihop_baseline(config: RAGConfig, api_url: str, dataset_path: Path, o
             "top_k": config.top_k,
             "temperature": config.temperature,
             "db_path": f"./vector_db/db_{config.embedding_model.split('/')[-1]}_cs{config.chunk_size}",
+            "use_hybrid": config.use_hybrid,
+            "hybrid_weight": config.hybrid_weight,
         }
         
         start_time = time.time()
@@ -106,6 +108,8 @@ if __name__ == "__main__":
     parser.add_argument("--chunk-size", type=int, default=RAGConfig.chunk_size)
     parser.add_argument("--chunk-overlap", type=int, default=RAGConfig.chunk_overlap)
     parser.add_argument("--top-k", type=int, default=RAGConfig.top_k)
+    parser.add_argument("--use-hybrid", action="store_true")
+    parser.add_argument("--hybrid-weight", type=float, default=RAGConfig.hybrid_weight)
     parser.add_argument("--run-name", default=None)
     args = parser.parse_args()
 
@@ -116,6 +120,8 @@ if __name__ == "__main__":
         chunk_size=args.chunk_size,
         chunk_overlap=args.chunk_overlap,
         top_k=args.top_k,
+        use_hybrid=args.use_hybrid,
+        hybrid_weight=args.hybrid_weight,
     )
     output_path = DEFAULT_OUTPUT_PATH
     if args.run_name:

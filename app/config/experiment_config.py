@@ -11,6 +11,8 @@ class RAGConfig:
     chunk_size: int = 1000
     chunk_overlap: int = 150
     top_k: int = 7
+    use_hybrid: bool = False
+    hybrid_weight: float = 0.5
     
     # Evaluation Settings
     eval_judge_model: str = "gemini-2.5-flash"

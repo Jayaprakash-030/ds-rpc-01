@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 # --- Ragas & LangChain ---
 from ragas.testset import TestsetGenerator
-from ragas.testset.synthesizers import MultiHopSpecificQuerySynthesizer
+from ragas.testset.synthesizers import MultiHopSpecificQuerySynthesizer, SingleHopSpecificQuerySynthesizer
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 
@@ -34,7 +34,7 @@ def load_docs():
         loader = DirectoryLoader(data_dir / subdir, glob="**/*.md", loader_cls=TextLoader)
         docs.extend(loader.load())
     for doc in docs:
-        doc.metadata["filename"] = doc.metadata.get("source", "unknown")
+        doc.metadata["filename"] = os.path.basename(doc.metadata.get("source", "unknown"))
     return docs
 
 documents = load_docs()
@@ -45,17 +45,21 @@ generator = TestsetGenerator.from_langchain(
     embedding_model=emb_instance
 )
 
-# 5. Focus ONLY on Multi-Hop (Complex reasoning)
-query_distribution = [
+# 5. Query distributions
+multi_query_distribution = [
     (MultiHopSpecificQuerySynthesizer(llm=generator.llm), 1.0)
 ]
+single_query_distribution = [
+    (SingleHopSpecificQuerySynthesizer(llm=generator.llm), 1.0)
+]
 
-async def generate():
-    print(" Generating 60 advanced Multi-Hop cases...")
+async def generate(testset_size, query_distribution, label):
+    print(f" Generating {testset_size} {label} cases...")
     testset = generator.generate_with_langchain_docs(
-        documents, 
-        testset_size=60, 
-        query_distribution=query_distribution
+        documents,
+        testset_size=testset_size,
+        query_distribution=query_distribution,
+        raise_exceptions=False,
     )
     return testset.to_pandas()
 
@@ -107,40 +111,82 @@ def coerce_contexts(value):
             return []
     return []
 
+def build_doc_index(docs):
+    index = []
+    for doc in docs:
+        normalized = normalize_ws(doc.page_content)
+        index.append((doc.metadata.get("filename"), normalized))
+    return index
+
+
+def map_contexts_to_sources(contexts, doc_index):
+    sources = []
+    for ctx in contexts:
+        ctx_text = normalize_ws(str(ctx))
+        ctx_text = ctx_text.replace("<1-hop>", "").replace("<2-hop>", "").strip()
+        snippet = ctx_text[:200]
+        match = None
+        for filename, normalized in doc_index:
+            if snippet and snippet in normalized:
+                match = filename
+                break
+        sources.append(match or "unknown")
+    return sources
+
 # Run the async generation
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
-    new_multi_hop_df = loop.run_until_complete(generate())
-
-    # 6. Append to your existing 42 QA pairs
-    existing_df = pd.read_csv(REPO_ROOT / "evals" / "golden_dataset.csv")
+    # Generate datasets (oversample to handle filtering)
+    multi_df = loop.run_until_complete(generate(60, multi_query_distribution, "multi-hop"))
+    single_df = loop.run_until_complete(generate(80, single_query_distribution, "single-hop"))
     
     # Normalize context column name across Ragas versions
-    if "contexts" in new_multi_hop_df.columns:
-        new_multi_hop_df = new_multi_hop_df.rename(columns={"contexts": "context"})
-    elif "reference_contexts" in new_multi_hop_df.columns:
-        new_multi_hop_df = new_multi_hop_df.rename(columns={"reference_contexts": "context"})
+    def normalize_context_column(df):
+        if "contexts" in df.columns:
+            df = df.rename(columns={"contexts": "context"})
+        elif "reference_contexts" in df.columns:
+            df = df.rename(columns={"reference_contexts": "context"})
+        return df
 
-    new_multi_hop_df["user_input"] = new_multi_hop_df["user_input"].astype(str).map(normalize_ws)
-    print(f"Generated rows: {len(new_multi_hop_df)}")
+    multi_df = normalize_context_column(multi_df)
+    single_df = normalize_context_column(single_df)
 
-    new_multi_hop_df = new_multi_hop_df[
-        new_multi_hop_df["user_input"].map(question_is_complex)
+    multi_df["user_input"] = multi_df["user_input"].astype(str).map(normalize_ws)
+    single_df["user_input"] = single_df["user_input"].astype(str).map(normalize_ws)
+
+    print(f"Generated multi-hop rows: {len(multi_df)}")
+    multi_df = multi_df[multi_df["user_input"].map(question_is_complex)]
+    print(f"Multi-hop after question filter: {len(multi_df)}")
+
+    multi_df["context"] = multi_df["context"].map(coerce_contexts)
+    multi_df = multi_df[multi_df["context"].map(context_is_multihop)]
+    print(f"Multi-hop after context filter: {len(multi_df)}")
+
+    multi_df = multi_df[
+        multi_df.apply(lambda r: answer_uses_multiple_contexts(str(r.get("reference", "")), r.get("context", [])), axis=1)
     ]
-    print(f"After question filter: {len(new_multi_hop_df)}")
+    print(f"Multi-hop after answer filter: {len(multi_df)}")
 
-    new_multi_hop_df["context"] = new_multi_hop_df["context"].map(coerce_contexts)
-    new_multi_hop_df = new_multi_hop_df[
-        new_multi_hop_df["context"].map(context_is_multihop)
-    ]
-    print(f"After context filter: {len(new_multi_hop_df)}")
+    doc_index = build_doc_index(documents)
+    multi_df["reference_sources"] = multi_df["context"].map(lambda c: map_contexts_to_sources(c, doc_index))
+    single_df["context"] = single_df["context"].map(coerce_contexts)
+    single_df["reference_sources"] = single_df["context"].map(lambda c: map_contexts_to_sources(c, doc_index))
 
-    new_multi_hop_df = new_multi_hop_df[
-        new_multi_hop_df.apply(lambda r: answer_uses_multiple_contexts(str(r.get("reference", "")), r.get("context", [])), axis=1)
-    ]
-    print(f"After answer filter: {len(new_multi_hop_df)}")
-    
+    # Trim to requested sizes
+    multi_target = 30
+    single_target = 50
+    if len(multi_df) < multi_target:
+        print(f"Warning: only {len(multi_df)} multi-hop rows after filtering.")
+    if len(single_df) < single_target:
+        print(f"Warning: only {len(single_df)} single-hop rows generated.")
+
+    multi_df = multi_df.head(multi_target)
+    single_df = single_df.head(single_target)
+
     multihop_path = REPO_ROOT / "evals" / "multihop_dataset.csv"
-    new_multi_hop_df.to_csv(multihop_path, index=False)
-    
+    singlehop_path = REPO_ROOT / "evals" / "singlehop_dataset.csv"
+    multi_df.to_csv(multihop_path, index=False)
+    single_df.to_csv(singlehop_path, index=False)
+
     print(f" Multi-hop questions saved to {multihop_path}")
+    print(f" Single-hop questions saved to {singlehop_path}")

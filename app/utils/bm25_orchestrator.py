@@ -19,15 +19,9 @@ MULTI_RESULTS = REPO_ROOT / "results" / "multihop_dataset_responses.csv"
 
 
 def run_step(command_list, step_name):
-    """Executes a subprocess and ensures it completes successfully."""
     print(f"--- [STEP: {step_name}] Executing... ---")
     try:
-        result = subprocess.run(
-            command_list, 
-            capture_output=True, 
-            text=True, 
-            check=True
-        )
+        result = subprocess.run(command_list, capture_output=True, text=True, check=True)
         return result.stdout
     except subprocess.CalledProcessError as e:
         print(f" Error in {step_name}!")
@@ -35,20 +29,15 @@ def run_step(command_list, step_name):
         print(f"Stderr: {e.stderr}")
         raise e
 
+
 def run_experiment_pipeline(cfg: RAGConfig, run_name: str, dataset_type: str):
-    """
-    Orchestrates the full RAG lifecycle for a single experiment configuration.
-    dataset_type: 'simple', 'multihop', or 'both'
-    """
-    tracker = RAGExperimentTracker(experiment_name="Finding best llm settings")
-    
+    tracker = RAGExperimentTracker(experiment_name="BM25_Optimization_Sprint")
+
     with tracker.start_run(run_name=run_name):
-        # 1. Setup metadata
         tracker.log_params(cfg.to_dict())
         tracker.set_run_tags({"dataset": dataset_type, "status": "running"})
-        
+
         try:
-            # 2. STEP 1: Ingestion (Versioned Vector Store)
             run_step([
                 sys.executable, str(INGEST_SCRIPT),
                 "--chunk_size", str(cfg.chunk_size),
@@ -65,14 +54,15 @@ def run_experiment_pipeline(cfg: RAGConfig, run_name: str, dataset_type: str):
                 "--chunk-size", str(cfg.chunk_size),
                 "--chunk-overlap", str(cfg.chunk_overlap),
                 "--embedding-model", cfg.embedding_model,
-                *(["--use-hybrid"] if getattr(cfg, "use_hybrid", False) else []),
-                "--hybrid-weight", str(getattr(cfg, "hybrid_weight", 0.5)),
+                "--use-hybrid",
+                "--hybrid-weight", str(cfg.hybrid_weight),
             ], "RESPONSES")
 
             datasets = ["simple", "multihop"] if dataset_type == "both" else [dataset_type]
             for ds in datasets:
                 tracker.set_run_tags({"dataset": ds})
                 results_file = SINGLE_RESULTS if ds == "simple" else MULTI_RESULTS
+
                 run_step([
                     sys.executable, str(EVAL_SCRIPT),
                     "--files", str(results_file),
@@ -81,7 +71,7 @@ def run_experiment_pipeline(cfg: RAGConfig, run_name: str, dataset_type: str):
 
                 evaluated_file = str(results_file).replace(".csv", "_automated_eval.csv")
                 tracker.log_metrics_from_csv(evaluated_file, metric_prefix=ds)
-            
+
             tracker.set_run_tags({"status": "completed"})
             print(f" Run '{run_name}' successfully completed and logged.")
 
@@ -89,29 +79,22 @@ def run_experiment_pipeline(cfg: RAGConfig, run_name: str, dataset_type: str):
             tracker.set_run_tags({"status": "failed", "error": str(e)})
             print(f" Run '{run_name}' failed. Moving to next experiment...")
 
+
 if __name__ == "__main__":
-    # Define experiment sweep (run on both datasets)
+    base_cfg = {
+        "llm_model": "gemini-3-pro-preview",
+        "chunk_size": 750,
+        "top_k": 15,
+        "temperature": 0.0,
+        "use_hybrid": True,
+    }
     configs_to_test = [
-        # Chunk size impact
-        {"chunk_size": 1500, "top_k": 7, "temperature": 0.0},
-        {"chunk_size": 2000, "top_k": 7, "temperature": 0.0},
-        {"chunk_size": 500, "top_k": 15, "temperature": 0.0},
-        # Top-k retrieval
-        {"chunk_size": 1000, "top_k": 10, "temperature": 0.0},
-        {"chunk_size": 1000, "top_k": 15, "temperature": 0.0},
-        {"chunk_size": 1500, "top_k": 10, "temperature": 0.0},
-        # Temperature for reasoning
-        {"chunk_size": 1000, "top_k": 10, "temperature": 0.3},
-        {"chunk_size": 1000, "top_k": 10, "temperature": 0.5},
-        # Same set with gemini-3-pro-preview
-        {"chunk_size": 1500, "top_k": 7, "temperature": 0.0, "llm_model": "gemini-3-pro-preview"},
-        {"chunk_size": 2000, "top_k": 7, "temperature": 0.0, "llm_model": "gemini-3-pro-preview"},
-        {"chunk_size": 500, "top_k": 15, "temperature": 0.0, "llm_model": "gemini-3-pro-preview"},
-        {"chunk_size": 1000, "top_k": 10, "temperature": 0.0, "llm_model": "gemini-3-pro-preview"},
-        {"chunk_size": 1000, "top_k": 15, "temperature": 0.0, "llm_model": "gemini-3-pro-preview"},
-        {"chunk_size": 1500, "top_k": 10, "temperature": 0.0, "llm_model": "gemini-3-pro-preview"},
-        {"chunk_size": 1000, "top_k": 10, "temperature": 0.3, "llm_model": "gemini-3-pro-preview"},
-        {"chunk_size": 1000, "top_k": 10, "temperature": 0.5, "llm_model": "gemini-3-pro-preview"},
+        {**base_cfg, "hybrid_weight": 0.0},
+        {**base_cfg, "hybrid_weight": 0.2},
+        {**base_cfg, "hybrid_weight": 0.4},
+        {**base_cfg, "hybrid_weight": 0.6},
+        {**base_cfg, "hybrid_weight": 0.8},
+        {**base_cfg, "hybrid_weight": 1.0},
     ]
 
     for i, params in enumerate(configs_to_test):
@@ -120,8 +103,11 @@ if __name__ == "__main__":
             top_k=params["top_k"],
             temperature=params["temperature"],
             llm_model=params.get("llm_model", RAGConfig.llm_model),
+            use_hybrid=True,
+            hybrid_weight=params.get("hybrid_weight", RAGConfig.hybrid_weight),
         )
         temp_tag = f"T{str(params['temperature']).replace('.', '')}"
         model_tag = params.get("llm_model", RAGConfig.llm_model).replace("-", "").replace(".", "").replace("_", "")
-        run_name = f"Exp_{i}_CS{params['chunk_size']}_K{params['top_k']}_{temp_tag}_{model_tag}"
+        weight_tag = f"HW{str(params['hybrid_weight']).replace('.', '')}"
+        run_name = f"BM25_{i}_CS{params['chunk_size']}_K{params['top_k']}_{temp_tag}_{weight_tag}_{model_tag}"
         run_experiment_pipeline(cfg, run_name, "both")

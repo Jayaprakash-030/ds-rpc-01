@@ -14,13 +14,15 @@ if __name__ == "__main__":
     test_cfg = RAGConfig(
         llm_model="gemini-3-pro-preview",
         embedding_model="models/text-embedding-004",
-        chunk_size=1000, 
+        chunk_size=1500,
         chunk_overlap=150,
-        top_k=5,
-        temperature=0.0
+        top_k=10,
+        temperature=0.0,
+        use_hybrid=False,
+        hybrid_weight=0.3,
     )
-    
+
     print(" STARTING SMOKE TEST...")
     # This will trigger: Ingest -> Inference -> Eval -> MLflow
-    run_experiment_pipeline(test_cfg, run_name="SMOKE_TEST_03", dataset_type="both")
+    run_experiment_pipeline(test_cfg, run_name="SMOKE_TEST_08", dataset_type="both")
     print(" SMOKE TEST FINISHED.")

@@ -47,17 +47,10 @@ class RAGEvaluator:
             handle.write(content)
             handle.write("\n---\n")
 
-    def _get_eval_prompt(self, is_multi_hop=False):
+    def _get_eval_prompt(self):
         """
         Returns the appropriate prompt template based on the complexity of the question.
         """
-        metric_name = "score_reasoning_quality" if is_multi_hop else "score_answer_relevance"
-        metric_desc = (
-            "score_reasoning_quality (1-5): Evaluate the logical connection between multiple retrieved facts." 
-            if is_multi_hop else 
-            "score_answer_relevance (1-5): Evaluate how directly and accurately the bot answered the specific question."
-        )
-
         template = f"""
         You are a Senior Quality Assurance Auditor for an Enterprise RAG system. 
         Your task is to evaluate the bot's response against a provided Ground Truth.
@@ -65,7 +58,7 @@ class RAGEvaluator:
         EVALUATION RUBRIC:
         1. score_retrieval_quality (1-5): Did the bot's answer contain the essential information found in the ground truth?
         2. score_llm_faithfulness (1-5): Did the bot avoid hallucinations? (5 = strictly grounded, 1 = made up external information).
-        3. {metric_desc}
+        3. score_reasoning_quality (1-5): Evaluate the logical connection and overall quality of the answer based on the ground truth.
 
         INPUT DATA:
         - Question: {{question}}
@@ -77,7 +70,7 @@ class RAGEvaluator:
         {{{{
             "retrieval_score": integer,
             "faithfulness_score": integer,
-            "{metric_name}": integer,
+            "score_reasoning_quality": integer,
             "error_type": "string (None, Retrieval Gap, Reasoning Failure, Hallucination, or Incomplete)"
         }}}}
         """
@@ -94,15 +87,17 @@ class RAGEvaluator:
             print(f"File not found: {file_path}")
             return
 
-        df = pd.read_csv(path)
+        try:
+            df = pd.read_csv(path)
+        except pd.errors.EmptyDataError:
+            print(f"Empty evaluation file: {path}")
+            return
         if "error_type" in df.columns:
             df["error_type"] = df["error_type"].astype("string")
         
-        # Determine if this is a Multi-Hop or Single-Hop file based on columns
-        is_multi_hop = "score_reasoning_quality" in df.columns
-        metric_col = "score_reasoning_quality" if is_multi_hop else "score_answer_relevance"
+        metric_col = "score_reasoning_quality"
         
-        prompt_template = self._get_eval_prompt(is_multi_hop)
+        prompt_template = self._get_eval_prompt()
         chain = prompt_template | self.llm
 
         print(f"Starting automated evaluation for: {path}")
@@ -121,31 +116,22 @@ class RAGEvaluator:
                 continue
 
             try:
-                result = None
-                last_content = ""
-                for attempt in range(self.retries + 1):
-                    response = chain.invoke({
-                        "question": question,
-                        "ground_truth": ground_truth,
-                        "bot_answer": bot_answer
-                    })
-                    last_content = response.content.strip()
-                    result = self._parse_response(response)
-                    retrieval_score = result.get("retrieval_score")
-                    faithfulness_score = result.get("faithfulness_score")
-                    metric_score = result.get(metric_col)
-                    error_type = result.get("error_type")
-
-                    if metric_score is not None:
-                        break
-
-                if metric_score is None:
-                    raise KeyError(metric_col)
+                response = chain.invoke({
+                    "question": question,
+                    "ground_truth": ground_truth,
+                    "bot_answer": bot_answer
+                })
+                last_content = response.content.strip()
+                result = self._parse_response(response)
+                retrieval_score = result.get("retrieval_score")
+                faithfulness_score = result.get("faithfulness_score")
+                reasoning_score = result.get("score_reasoning_quality")
+                error_type = result.get("error_type")
 
                 # Update DataFrame
                 df.at[idx, "score_retrieval_quality"] = retrieval_score
                 df.at[idx, "score_llm_faithfulness"] = faithfulness_score
-                df.at[idx, metric_col] = metric_score
+                df.at[idx, "score_reasoning_quality"] = reasoning_score
                 df.at[idx, "error_type"] = error_type
                 
                 print(f"Evaluated row {idx + 1}/{len(df)}")
@@ -169,16 +155,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--files", nargs="*", default=None)
     parser.add_argument("--eval-judge-model", default=RAGConfig.eval_judge_model)
-    parser.add_argument("--retries", type=int, default=1)
     parser.add_argument("--sleep", type=float, default=1.0)
     args = parser.parse_args()
 
     cfg = RAGConfig(eval_judge_model=args.eval_judge_model)
-    evaluator = RAGEvaluator(cfg, retries=args.retries, sleep_seconds=args.sleep)
+    evaluator = RAGEvaluator(cfg, retries=0, sleep_seconds=args.sleep)
 
     if args.files:
         for file_path in args.files:
             evaluator.evaluate_file(file_path)
     else:
-        evaluator.evaluate_file(REPO_ROOT / "results" / "quality_baseline_scores.csv")
-        evaluator.evaluate_file(REPO_ROOT / "results" / "multihop_baseline_scores.csv")
+        evaluator.evaluate_file(REPO_ROOT / "results" / "singlehop_dataset_responses.csv")
+        evaluator.evaluate_file(REPO_ROOT / "results" / "multihop_dataset_responses.csv")

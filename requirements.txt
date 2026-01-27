@@ -23,6 +23,7 @@ markdown
 ragas>=0.1.7         
 datasets             
 langchain-community
+rank_bm25
 
 # experiment tracking and model management
-mlfow
+mlflow

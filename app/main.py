@@ -71,6 +71,8 @@ def query_test(
     top_k: Optional[int] = None,
     temperature: Optional[float] = None,
     db_path: Optional[str] = None,
+    use_hybrid: Optional[bool] = None,
+    hybrid_weight: Optional[float] = None,
 ):
     result = rag_service.get_response(
         message,
@@ -78,9 +80,12 @@ def query_test(
         top_k=top_k,
         temperature=temperature,
         persist_directory=db_path,
+        use_hybrid=use_hybrid,
+        hybrid_weight=hybrid_weight,
     )
     return {
         "answer": result["answer"],
         "sources": list(dict.fromkeys(doc.metadata.get("source") for doc in result["context"])),
+        "retrieved_contexts": [doc.page_content for doc in result["context"]],
         "role": "c-level"
     }
