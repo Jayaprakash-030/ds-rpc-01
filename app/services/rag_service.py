@@ -1,4 +1,5 @@
 import os
+import time
 from typing import Optional
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains import create_retrieval_chain
@@ -62,11 +63,28 @@ class RAGService:
 
         if use_hybrid:
             bm25_retriever = self._build_bm25_retriever(vectorstore, k)
+            if os.getenv("RAG_DEBUG_RETRIEVER", "").lower() in {"1", "true", "yes"}:
+                try:
+                    vec_docs = vector_retriever.get_relevant_documents(query)
+                    bm25_docs = bm25_retriever.get_relevant_documents(query)
+                    combined_ids = {id(d) for d in vec_docs} | {id(d) for d in bm25_docs}
+                    print(
+                        f"[retriever_debug] vector={len(vec_docs)} bm25={len(bm25_docs)} "
+                        f"unique={len(combined_ids)} k={k}"
+                    )
+                except Exception as exc:
+                    print(f"[retriever_debug] failed to collect counts: {exc}")
             retriever = EnsembleRetriever(
                 retrievers=[vector_retriever, bm25_retriever],
                 weights=[1 - hybrid_weight, hybrid_weight],
             )
         else:
+            if os.getenv("RAG_DEBUG_RETRIEVER", "").lower() in {"1", "true", "yes"}:
+                try:
+                    vec_docs = vector_retriever.get_relevant_documents(query)
+                    print(f"[retriever_debug] vector={len(vec_docs)} k={k}")
+                except Exception as exc:
+                    print(f"[retriever_debug] failed to collect counts: {exc}")
             retriever = vector_retriever
 
         # 2. Define the Prompt (Ensures context-rich response) 
@@ -82,11 +100,25 @@ class RAGService:
             ("human", "{input}"),
         ])
 
-        # 3. Create and Invoke the Chain
+        # 3. Retrieve docs and invoke the chain with timing
         question_answer_chain = create_stuff_documents_chain(llm, prompt)
-        rag_chain = create_retrieval_chain(retriever, question_answer_chain)
-        
-        return rag_chain.invoke({"input": query})
+
+        t0 = time.time()
+        docs = retriever.get_relevant_documents(query)
+        t1 = time.time()
+
+        result = question_answer_chain.invoke({"input": query, "context": docs})
+        t2 = time.time()
+
+        return {
+            "answer": result.get("answer") if isinstance(result, dict) else result,
+            "context": docs,
+            "timings": {
+                "retrieval_ms": round((t1 - t0) * 1000, 2),
+                "generation_ms": round((t2 - t1) * 1000, 2),
+                "total_ms": round((t2 - t0) * 1000, 2),
+            },
+        }
 
     def _build_bm25_retriever(self, vectorstore, k: int):
         try:

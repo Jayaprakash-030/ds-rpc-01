@@ -34,6 +34,26 @@ class RAGExperimentTracker:
             metrics[f"{prefix}avg_reasoning_quality"] = df["score_reasoning_quality"].mean()
         elif "score_answer_relevance" in df.columns:
             metrics[f"{prefix}avg_answer_relevance"] = df["score_answer_relevance"].mean()
+
+        # Retrieval + context metrics if available
+        for col in ("precision", "recall", "context_precision", "context_recall", "retrieved_contexts_count"):
+            if col in df.columns:
+                metrics[f"{prefix}avg_{col}"] = df[col].mean()
+
+        # Latency percentiles (ms) if available
+        if "latency_ms" in df.columns:
+            latency = pd.to_numeric(df["latency_ms"], errors="coerce").dropna()
+            if not latency.empty:
+                metrics[f"{prefix}latency_p50_ms"] = float(latency.quantile(0.50))
+                metrics[f"{prefix}latency_p95_ms"] = float(latency.quantile(0.95))
+                metrics[f"{prefix}latency_mean_ms"] = float(latency.mean())
+
+        # Retrieval/generation timing if available
+        for col in ("retrieval_ms", "generation_ms", "total_ms"):
+            if col in df.columns:
+                s = pd.to_numeric(df[col], errors="coerce").dropna()
+                if not s.empty:
+                    metrics[f"{prefix}{col}_mean"] = float(s.mean())
             
         mlflow.log_metrics(metrics)
         

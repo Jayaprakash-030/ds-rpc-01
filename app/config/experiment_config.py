@@ -13,6 +13,8 @@ class RAGConfig:
     top_k: int = 7
     use_hybrid: bool = False
     hybrid_weight: float = 0.5
+    min_chunk_size: int = 1000
+    max_chunk_size: int = 1300
     
     # Evaluation Settings
     eval_judge_model: str = "gemini-2.5-flash"

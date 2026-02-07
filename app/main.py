@@ -60,7 +60,8 @@ def query(user=Depends(authenticate), message: str = "Hello"):
     return {
         "answer": result["answer"],
         "sources": list(dict.fromkeys(doc.metadata.get("source") for doc in result["context"])),
-        "role": user["role"]
+        "role": user["role"],
+        "timings": result.get("timings", {})
     }
 
 
@@ -87,5 +88,6 @@ def query_test(
         "answer": result["answer"],
         "sources": list(dict.fromkeys(doc.metadata.get("source") for doc in result["context"])),
         "retrieved_contexts": [doc.page_content for doc in result["context"]],
-        "role": "c-level"
+        "role": "c-level",
+        "timings": result.get("timings", {})
     }

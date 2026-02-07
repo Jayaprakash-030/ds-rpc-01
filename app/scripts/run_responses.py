@@ -1,13 +1,18 @@
 import argparse
 import ast
 import json
+import os
 import sys
 import time
-import re
 from pathlib import Path
 
 import pandas as pd
 import requests
+from dotenv import load_dotenv
+from langchain_google_genai import ChatGoogleGenerativeAI
+from ragas.evaluation import EvaluationDataset, LangchainLLMWrapper, SingleTurnSample, evaluate
+from ragas.metrics._context_precision import ContextPrecision
+from ragas.metrics._context_recall import ContextRecall
 
 BASE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = BASE_DIR.parents[1]
@@ -15,6 +20,10 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from app.config.experiment_config import RAGConfig
+
+# Load .env relative to repo root so scripts work from any CWD
+ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
+load_dotenv(ENV_PATH)
 
 DEFAULT_API_URL = "http://localhost:8000/chat_test"
 
@@ -31,6 +40,18 @@ def coerce_list(value):
             return []
     return []
 
+def normalize_sources(sources):
+    normalized = []
+    for src in sources:
+        if not src:
+            continue
+        text = str(src).strip()
+        # Keep filenames consistent when absolute paths are present
+        if "/" in text or "\\" in text:
+            text = os.path.basename(text)
+        normalized.append(text)
+    return normalized
+
 
 def compute_precision_recall(retrieved, reference):
     retrieved_set = {r for r in retrieved if r}
@@ -46,37 +67,8 @@ def compute_precision_recall(retrieved, reference):
     return precision, recall, sorted(retrieved_set & reference_set)
 
 
-def normalize_tokens(text: str) -> set[str]:
-    tokens = re.findall(r"[a-zA-Z0-9]{4,}", text.lower())
-    return set(tokens)
-
-
-def context_match(retrieved: str, reference: str, min_overlap: int = 3) -> bool:
-    r_tokens = normalize_tokens(retrieved)
-    ref_tokens = normalize_tokens(reference)
-    return len(r_tokens & ref_tokens) >= min_overlap
-
-
-def compute_context_pr(retrieved_contexts, reference_contexts):
-    retrieved = [str(c).strip() for c in retrieved_contexts if c]
-    reference = [str(c).strip() for c in reference_contexts if c]
-    if not retrieved:
-        return 0.0, 0.0, []
-    if not reference:
-        return 0.0, 0.0, []
-
-    matched_retrieved = []
-    for r in retrieved:
-        if any(context_match(r, ref) for ref in reference):
-            matched_retrieved.append(r)
-
-    precision = len(matched_retrieved) / len(retrieved) if retrieved else 0.0
-    matched_reference = []
-    for ref in reference:
-        if any(context_match(r, ref) for r in retrieved):
-            matched_reference.append(ref)
-    recall = len(matched_reference) / len(reference) if reference else 0.0
-    return precision, recall, matched_retrieved
+def build_ragas_dataset(samples):
+    return EvaluationDataset(samples=samples)
 
 
 def run_responses(config: RAGConfig, api_url: str, dataset_path: Path, output_path: Path):
@@ -86,6 +78,7 @@ def run_responses(config: RAGConfig, api_url: str, dataset_path: Path, output_pa
 
     df = pd.read_csv(dataset_path)
     results = []
+    ragas_samples = []
 
     print(f"Running responses for {len(df)} questions...")
 
@@ -115,13 +108,13 @@ def run_responses(config: RAGConfig, api_url: str, dataset_path: Path, output_pa
             continue
 
         bot_answer = data.get("answer", "")
-        retrieved_sources = data.get("sources", [])
+        retrieved_sources = normalize_sources(data.get("sources", []))
         retrieved_contexts = data.get("retrieved_contexts", [])
+        timings = data.get("timings", {}) or {}
 
-        reference_sources = coerce_list(row.get("reference_sources", []))
+        reference_sources = normalize_sources(coerce_list(row.get("reference_sources", [])))
         precision, recall, matched = compute_precision_recall(retrieved_sources, reference_sources)
         reference_contexts = coerce_list(row.get("context", []))
-        ctx_precision, ctx_recall, ctx_matched = compute_context_pr(retrieved_contexts, reference_contexts)
 
         results.append({
             "id": f"Q_{i}",
@@ -129,18 +122,62 @@ def run_responses(config: RAGConfig, api_url: str, dataset_path: Path, output_pa
             "ground_truth": ground_truth,
             "bot_answer": bot_answer,
             "retrieved_sources": retrieved_sources,
+            "retrieved_contexts": retrieved_contexts,
+            "retrieved_contexts_count": len(retrieved_contexts) if retrieved_contexts else 0,
             "reference_sources": reference_sources,
+            "reference_contexts": reference_contexts,
             "matched_sources": matched,
             "precision": round(precision, 4),
             "recall": round(recall, 4),
-            "context_precision": round(ctx_precision, 4),
-            "context_recall": round(ctx_recall, 4),
+            "context_precision": "",
+            "context_recall": "",
             "latency_ms": round(latency_ms, 2),
+            "retrieval_ms": timings.get("retrieval_ms", ""),
+            "generation_ms": timings.get("generation_ms", ""),
+            "total_ms": timings.get("total_ms", ""),
             "score_retrieval_quality": "",
             "score_llm_faithfulness": "",
             "score_reasoning_quality": "",
             "error_type": "",
         })
+
+        ragas_samples.append(SingleTurnSample(
+            user_input=question,
+            retrieved_contexts=[str(c).strip() for c in retrieved_contexts if c],
+            reference_contexts=[str(c).strip() for c in reference_contexts if c],
+            reference=ground_truth or "",
+        ))
+
+    if results:
+        api_key = os.getenv("GOOGLE_API_KEY")
+        if not api_key:
+            raise RuntimeError("GOOGLE_API_KEY is not set; required for RAGAS context metrics.")
+
+        ragas_llm = ChatGoogleGenerativeAI(
+            model=config.eval_judge_model,
+            google_api_key=api_key,
+            temperature=0.0,
+            convert_system_message_to_human=True,
+        )
+        ragas_dataset = build_ragas_dataset(ragas_samples)
+        ragas_result = evaluate(
+            ragas_dataset,
+            metrics=[ContextPrecision(), ContextRecall()],
+            llm=LangchainLLMWrapper(ragas_llm),
+            show_progress=True,
+        )
+        ragas_df = ragas_result.to_pandas()
+        for idx, row in ragas_df.iterrows():
+            if idx >= len(results):
+                break
+            ctx_precision = row.get("context_precision")
+            ctx_recall = row.get("context_recall")
+            if pd.isna(ctx_precision):
+                ctx_precision = 0.0
+            if pd.isna(ctx_recall):
+                ctx_recall = 0.0
+            results[idx]["context_precision"] = round(float(ctx_precision), 4)
+            results[idx]["context_recall"] = round(float(ctx_recall), 4)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(results).to_csv(output_path, index=False)
@@ -149,6 +186,19 @@ def run_responses(config: RAGConfig, api_url: str, dataset_path: Path, output_pa
     config_path = output_path.with_suffix(".config.json")
     config_path.write_text(json.dumps(config.to_dict(), indent=2))
     print(f"Config saved to: {config_path}")
+
+    # Run-level latency percentiles for quick comparison
+    if results:
+        df_out = pd.DataFrame(results)
+        latency = pd.to_numeric(df_out.get("latency_ms"), errors="coerce").dropna()
+        if not latency.empty:
+            p50 = float(latency.quantile(0.50))
+            p95 = float(latency.quantile(0.95))
+            summary = {"latency_p50_ms": round(p50, 2), "latency_p95_ms": round(p95, 2)}
+            summary_path = output_path.with_suffix(".summary.json")
+            summary_path.write_text(json.dumps(summary, indent=2))
+            print(f"Latency p50/p95 (ms): {summary['latency_p50_ms']} / {summary['latency_p95_ms']}")
+            print(f"Summary saved to: {summary_path}")
 
 
 if __name__ == "__main__":

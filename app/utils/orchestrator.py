@@ -40,7 +40,7 @@ def run_experiment_pipeline(cfg: RAGConfig, run_name: str, dataset_type: str):
     Orchestrates the full RAG lifecycle for a single experiment configuration.
     dataset_type: 'simple', 'multihop', or 'both'
     """
-    tracker = RAGExperimentTracker(experiment_name="Finding best llm settings")
+    tracker = RAGExperimentTracker(experiment_name="Checking latency")
     
     with tracker.start_run(run_name=run_name):
         # 1. Setup metadata
@@ -53,7 +53,9 @@ def run_experiment_pipeline(cfg: RAGConfig, run_name: str, dataset_type: str):
                 sys.executable, str(INGEST_SCRIPT),
                 "--chunk_size", str(cfg.chunk_size),
                 "--chunk_overlap", str(cfg.chunk_overlap),
-                "--embedding_model", cfg.embedding_model
+                "--embedding_model", cfg.embedding_model,
+                "--min_chunk_size", str(getattr(cfg, "min_chunk_size", 1000)),
+                "--max_chunk_size", str(getattr(cfg, "max_chunk_size", 1300)),
             ], "INGESTION")
 
             ds_arg = "both" if dataset_type == "both" else ("single" if dataset_type == "simple" else "multi")
@@ -90,28 +92,30 @@ def run_experiment_pipeline(cfg: RAGConfig, run_name: str, dataset_type: str):
             print(f" Run '{run_name}' failed. Moving to next experiment...")
 
 if __name__ == "__main__":
-    # Define experiment sweep (run on both datasets)
+    # Define experiment sweep (run on both datasets) for new chunk-merge setup
     configs_to_test = [
-        # Chunk size impact
-        {"chunk_size": 1500, "top_k": 7, "temperature": 0.0},
-        {"chunk_size": 2000, "top_k": 7, "temperature": 0.0},
-        {"chunk_size": 500, "top_k": 15, "temperature": 0.0},
-        # Top-k retrieval
-        {"chunk_size": 1000, "top_k": 10, "temperature": 0.0},
-        {"chunk_size": 1000, "top_k": 15, "temperature": 0.0},
-        {"chunk_size": 1500, "top_k": 10, "temperature": 0.0},
-        # Temperature for reasoning
-        {"chunk_size": 1000, "top_k": 10, "temperature": 0.3},
-        {"chunk_size": 1000, "top_k": 10, "temperature": 0.5},
-        # Same set with gemini-3-pro-preview
-        {"chunk_size": 1500, "top_k": 7, "temperature": 0.0, "llm_model": "gemini-3-pro-preview"},
-        {"chunk_size": 2000, "top_k": 7, "temperature": 0.0, "llm_model": "gemini-3-pro-preview"},
-        {"chunk_size": 500, "top_k": 15, "temperature": 0.0, "llm_model": "gemini-3-pro-preview"},
-        {"chunk_size": 1000, "top_k": 10, "temperature": 0.0, "llm_model": "gemini-3-pro-preview"},
-        {"chunk_size": 1000, "top_k": 15, "temperature": 0.0, "llm_model": "gemini-3-pro-preview"},
-        {"chunk_size": 1500, "top_k": 10, "temperature": 0.0, "llm_model": "gemini-3-pro-preview"},
-        {"chunk_size": 1000, "top_k": 10, "temperature": 0.3, "llm_model": "gemini-3-pro-preview"},
-        {"chunk_size": 1000, "top_k": 10, "temperature": 0.5, "llm_model": "gemini-3-pro-preview"},
+        # Baselines
+        {"chunk_size": 2500, "min_chunk_size": 1000, "max_chunk_size": 1300, "top_k": 3, "use_hybrid": True, "hybrid_weight": 0.3, "temperature": 0.0},
+        # {"chunk_size": 2500, "min_chunk_size": 1000, "max_chunk_size": 1300, "top_k": 4, "use_hybrid": True, "hybrid_weight": 0.3, "temperature": 0.0},
+        # # Disable hybrid
+        # {"chunk_size": 2500, "min_chunk_size": 1000, "max_chunk_size": 1300, "top_k": 3, "use_hybrid": False, "temperature": 0.0},
+        # {"chunk_size": 2500, "min_chunk_size": 1000, "max_chunk_size": 1300, "top_k": 5, "use_hybrid": False, "temperature": 0.0},
+        # # Hybrid weight sweep
+        # {"chunk_size": 2500, "min_chunk_size": 1000, "max_chunk_size": 1300, "top_k": 4, "use_hybrid": True, "hybrid_weight": 0.1, "temperature": 0.0},
+        # {"chunk_size": 2500, "min_chunk_size": 1000, "max_chunk_size": 1300, "top_k": 4, "use_hybrid": True, "hybrid_weight": 0.5, "temperature": 0.0},
+        # {"chunk_size": 2500, "min_chunk_size": 1000, "max_chunk_size": 1300, "top_k": 4, "use_hybrid": True, "hybrid_weight": 0.7, "temperature": 0.0},
+        
+        # # Min/max chunk size variants
+        # {"chunk_size": 2500, "min_chunk_size": 800, "max_chunk_size": 1200, "top_k": 4, "use_hybrid": True, "hybrid_weight": 0.3, "temperature": 0.0},
+        # {"chunk_size": 2500, "min_chunk_size": 1200, "max_chunk_size": 1600, "top_k": 4, "use_hybrid": True, "hybrid_weight": 0.3, "temperature": 0.0},
+        # # Low min/max with higher top_k
+        # {"chunk_size": 2500, "min_chunk_size": 400, "max_chunk_size": 600, "top_k": 10, "use_hybrid": False, "temperature": 0.0},
+        # # {"chunk_size": 2500, "min_chunk_size": 400, "max_chunk_size": 600, "top_k": 15, "use_hybrid": False, "temperature": 0.0},
+        # {"chunk_size": 2500, "min_chunk_size": 300, "max_chunk_size": 500, "top_k": 7, "use_hybrid": True, "hybrid_weight": 0.3, "temperature": 0.0},
+        # {"chunk_size": 2500, "min_chunk_size": 300, "max_chunk_size": 500, "top_k": 8, "use_hybrid": True, "hybrid_weight": 0.3, "temperature": 0.0},
+        # # LLM model variants
+        # {"chunk_size": 2500, "min_chunk_size": 1000, "max_chunk_size": 1300, "top_k": 4, "use_hybrid": True, "hybrid_weight": 0.3, "temperature": 0.0, "llm_model": "gemini-3-pro-preview"},
+        # {"chunk_size": 2500, "min_chunk_size": 1000, "max_chunk_size": 1300, "top_k": 5, "use_hybrid": False, "temperature": 0.0, "llm_model": "gemini-3-pro-preview"},
     ]
 
     for i, params in enumerate(configs_to_test):
@@ -120,8 +124,15 @@ if __name__ == "__main__":
             top_k=params["top_k"],
             temperature=params["temperature"],
             llm_model=params.get("llm_model", RAGConfig.llm_model),
+            use_hybrid=params.get("use_hybrid", RAGConfig.use_hybrid),
+            hybrid_weight=params.get("hybrid_weight", RAGConfig.hybrid_weight),
+            min_chunk_size=params.get("min_chunk_size", RAGConfig.min_chunk_size),
+            max_chunk_size=params.get("max_chunk_size", RAGConfig.max_chunk_size),
         )
         temp_tag = f"T{str(params['temperature']).replace('.', '')}"
         model_tag = params.get("llm_model", RAGConfig.llm_model).replace("-", "").replace(".", "").replace("_", "")
-        run_name = f"Exp_{i}_CS{params['chunk_size']}_K{params['top_k']}_{temp_tag}_{model_tag}"
+        hybrid_tag = "HY1" if params.get("use_hybrid", RAGConfig.use_hybrid) else "HY0"
+        hw_tag = f"HW{str(params.get('hybrid_weight', RAGConfig.hybrid_weight)).replace('.', '')}"
+        mm_tag = f"MM{params.get('min_chunk_size', RAGConfig.min_chunk_size)}_{params.get('max_chunk_size', RAGConfig.max_chunk_size)}"
+        run_name = f"Exp_{i}_CS{params['chunk_size']}_K{params['top_k']}_{temp_tag}_{model_tag}_{hybrid_tag}_{hw_tag}_{mm_tag}"
         run_experiment_pipeline(cfg, run_name, "both")

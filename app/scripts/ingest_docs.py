@@ -66,6 +66,62 @@ def split_markdown_documents(docs):
     print(f"Total chunks created: {len(final_chunks)}")
     return final_chunks
 
+def _header_key(chunk, level: int):
+    key = f"Header {level}"
+    return chunk.metadata.get(key)
+
+
+def _merge_sequential(chunks, min_chunk_size: int):
+    merged = []
+    buffer_doc = None
+
+    for chunk in chunks:
+        content = chunk.page_content or ""
+        if buffer_doc is None:
+            buffer_doc = chunk
+            continue
+
+        if len(buffer_doc.page_content) < min_chunk_size:
+            buffer_doc.page_content += "\n\n" + content
+        else:
+            merged.append(buffer_doc)
+            buffer_doc = chunk
+
+    if buffer_doc is not None:
+        merged.append(buffer_doc)
+
+    return merged
+
+
+def merge_chunks_hierarchical(chunks, min_chunk_size: int):
+    """
+    Bottom-up merge:
+    Merge Header 4 -> Header 3 -> Header 2 -> Header 1, never crossing parent boundaries.
+    """
+    def group_key(chunk, level: int):
+        return tuple(_header_key(chunk, i) for i in range(1, level + 1))
+
+    merged = chunks
+    for level in (4, 3, 2, 1):
+        grouped = []
+        buffer = []
+        last_key = None
+
+        for chunk in merged:
+            key = group_key(chunk, level)
+            if buffer and key != last_key:
+                grouped.extend(_merge_sequential(buffer, min_chunk_size))
+                buffer = []
+            buffer.append(chunk)
+            last_key = key
+
+        if buffer:
+            grouped.extend(_merge_sequential(buffer, min_chunk_size))
+
+        merged = grouped
+
+    return merged
+
 def load_hr_csv(csv_path):
     """Load the single HR CSV file."""
     loader = CSVLoader(file_path=csv_path)
@@ -80,20 +136,21 @@ def load_hr_csv(csv_path):
     print(f"Loaded {len(docs)} HR CSV rows.")
     return docs
 
-def run_ingestion(config: RAGConfig):
-    print(f"--- Ingesting with Chunk Size: {config.chunk_size} ---")
+def run_ingestion(config: RAGConfig, min_chunk_size: int = 1000, max_chunk_size: int = 1300):
+    print(f"--- Ingesting with Min/Max Chunk Size: {min_chunk_size}/{max_chunk_size} ---")
     data_dir = ROOT_DIR / "resources" / "data"
     hr_csv_path = data_dir / "hr" / "hr_data.csv"
 
     markdown_files = check_markdown_files(str(data_dir))
     markdown_chunks = split_markdown_documents(markdown_files)
 
-    # If a header-based chunk is still too big, break it down further
+    # Merge small header chunks, then split only oversized chunks
+    merged_chunks = merge_chunks_hierarchical(markdown_chunks, min_chunk_size=min_chunk_size)
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=config.chunk_size,
+        chunk_size=max_chunk_size,
         chunk_overlap=config.chunk_overlap,
     )
-    final_markdown_chunks = text_splitter.split_documents(markdown_chunks)
+    final_markdown_chunks = text_splitter.split_documents(merged_chunks)
     print(f"Total recursive chunks created: {len(final_markdown_chunks)}")
 
     # HR CSV pipeline
@@ -106,7 +163,7 @@ def run_ingestion(config: RAGConfig):
 
     # Save to a versioned directory so we don't overwrite baselines
     model_short_name = config.embedding_model.split("/")[-1]
-    db_name = f"db_{model_short_name}_cs{config.chunk_size}"
+    db_name = f"db_{model_short_name}_cs{max_chunk_size}"
     db_path = ROOT_DIR / "vector_db" / db_name
     db_path.mkdir(parents=True, exist_ok=True)
 
@@ -120,7 +177,13 @@ if __name__ == "__main__":
     parser.add_argument("--chunk_size", type=int, default=1000)
     parser.add_argument("--chunk_overlap", type=int, default=150)
     parser.add_argument("--embedding_model", type=str, default="models/embedding-001")
+    parser.add_argument("--min_chunk_size", type=int, default=1000)
+    parser.add_argument("--max_chunk_size", type=int, default=1300)
     args = parser.parse_args()
 
     config = RAGConfig(chunk_size=args.chunk_size, chunk_overlap=args.chunk_overlap, embedding_model=args.embedding_model)
-    run_ingestion(config)
+    run_ingestion(
+        config,
+        min_chunk_size=args.min_chunk_size,
+        max_chunk_size=args.max_chunk_size,
+    )
