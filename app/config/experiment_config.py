@@ -4,7 +4,7 @@ from dataclasses import dataclass, asdict
 class RAGConfig:
     # Model Settings
     llm_model: str = "gemini-2.5-flash"
-    embedding_model: str = "models/text-embedding-004"
+    embedding_model: str = "models/gemini-embedding-001"
     temperature: float = 0.0
     
     # Retrieval Settings

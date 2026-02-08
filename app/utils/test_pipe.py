@@ -13,12 +13,12 @@ if __name__ == "__main__":
     # Define a tiny, fast test config
     test_cfg = RAGConfig(
         llm_model="gemini-2.5-flash",
-        embedding_model="models/text-embedding-004",
+        embedding_model="models/gemini-embedding-001",
         chunk_size=2500,
         chunk_overlap=150,
         top_k=5,
         temperature=0.0,
-        use_hybrid=True,
+        use_hybrid=False,
         hybrid_weight=0.3,
         min_chunk_size=1000,
         max_chunk_size=1300
