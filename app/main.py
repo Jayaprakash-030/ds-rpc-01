@@ -60,6 +60,8 @@ def query(
     db_path: Optional[str] = None,
     use_hybrid: Optional[bool] = None,
     hybrid_weight: Optional[float] = None,
+    use_reranker: Optional[bool] = None,
+    rerank_top_n: Optional[int] = None,
     max_output_tokens: Optional[int] = None,
     max_context_chars: Optional[int] = None,
     max_doc_chars: Optional[int] = None,
@@ -74,6 +76,8 @@ def query(
         persist_directory=db_path,
         use_hybrid=use_hybrid,
         hybrid_weight=hybrid_weight,
+        use_reranker=use_reranker,
+        rerank_top_n=rerank_top_n,
         max_output_tokens=max_output_tokens,
         max_context_chars=max_context_chars,
         max_doc_chars=max_doc_chars,
@@ -105,6 +109,8 @@ def query_test(
     max_context_chars: Optional[int] = None,
     max_doc_chars: Optional[int] = None,
     response_style: Optional[str] = None,
+    use_reranker: Optional[bool] = None,
+    rerank_top_n: Optional[int] = None,
 ):
     result = rag_service.get_response(
         message,
@@ -120,6 +126,8 @@ def query_test(
         max_context_chars=max_context_chars,
         max_doc_chars=max_doc_chars,
         response_style=response_style,
+        use_reranker=use_reranker,
+        rerank_top_n=rerank_top_n,
     )
     return {
         "answer": result["answer"],

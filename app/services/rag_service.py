@@ -1,7 +1,7 @@
 import os
 import time
 import math
-from typing import Optional
+from typing import Optional, List
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
@@ -10,6 +10,14 @@ from langchain_community.retrievers import BM25Retriever
 from langchain.retrievers import EnsembleRetriever
 from app.config.experiment_config import RAGConfig
 from app.services.vector_store import VectorStoreManager
+
+# Optional reranker (sentence-transformers); skip if not installed
+def _get_reranker(model_name: str):
+    try:
+        from sentence_transformers import CrossEncoder
+        return CrossEncoder(model_name)
+    except ImportError:
+        return None
 
 class RAGService:
     def __init__(self, config: Optional[RAGConfig] = None):
@@ -39,6 +47,8 @@ class RAGService:
         max_context_chars: Optional[int] = None,
         max_doc_chars: Optional[int] = None,
         response_style: Optional[str] = None,
+        use_reranker: Optional[bool] = None,
+        rerank_top_n: Optional[int] = None,
     ):
         vectorstore = self.vectorstore
         if persist_directory:
@@ -66,6 +76,8 @@ class RAGService:
         hybrid_weight = self.config.hybrid_weight if hybrid_weight is None else hybrid_weight
         use_mmr = self.config.use_mmr if use_mmr is None else use_mmr
         mmr_lambda = self.config.mmr_lambda if mmr_lambda is None else mmr_lambda
+        use_reranker = self.config.use_reranker if use_reranker is None else use_reranker
+        rerank_top_n = self.config.rerank_top_n if rerank_top_n is None else rerank_top_n
         if user_role.lower() == "c-level":
             search_kwargs = {"k": k}
         else:
@@ -74,7 +86,8 @@ class RAGService:
                 "filter": {"role": {"$in": [user_role.lower(), "general"]}}
             }
 
-        fetch_k = max(k * 2, 10) if use_mmr and use_hybrid else k
+        # Fetch more candidates when using MMR so we can diversify (e.g. multiple docs for multihop)
+        fetch_k = max(k * 3, 20) if use_mmr and use_hybrid else (max(k * 2, 10) if use_mmr else k)
         search_kwargs["k"] = fetch_k
 
         if use_mmr and not use_hybrid:
@@ -136,6 +149,8 @@ class RAGService:
         docs = retriever.get_relevant_documents(query)
         if use_hybrid and use_mmr:
             docs = self._mmr_select(query, docs, k, mmr_lambda, vectorstore)
+        if use_reranker and docs:
+            docs = self._rerank(query, docs, rerank_top_n)
         t1 = time.time()
 
         result = question_answer_chain.invoke({"input": query, "context": docs})
@@ -205,6 +220,26 @@ class RAGService:
             remaining.remove(next_idx)
 
         return selected
+
+    def _rerank(self, query: str, docs: List[Document], top_n: int) -> List[Document]:
+        """Rerank retrieved docs with a cross-encoder and return top_n for better context precision."""
+        model_name = getattr(self.config, "reranker_model", "cross-encoder/ms-marco-MiniLM-L-6-v2")
+        encoder = _get_reranker(model_name)
+        if encoder is None:
+            return docs[:top_n]
+        pairs = [(query, d.page_content or "") for d in docs]
+        scores = encoder.predict(pairs)
+        try:
+            import numpy as np
+            if isinstance(scores, np.ndarray):
+                scores = scores.flatten().tolist()
+        except ImportError:
+            pass
+        if not isinstance(scores, list):
+            scores = list(scores)
+        indexed = [(float(scores[i]), i) for i in range(len(docs))]
+        indexed.sort(key=lambda x: x[0], reverse=True)
+        return [docs[i] for _, i in indexed[:top_n]]
 
     def _build_bm25_retriever(self, vectorstore, k: int):
         try:

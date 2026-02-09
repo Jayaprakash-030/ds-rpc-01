@@ -102,6 +102,8 @@ def run_responses(config: RAGConfig, api_url: str, dataset_path: Path, output_pa
             "max_context_chars": config.max_context_chars,
             "max_doc_chars": config.max_doc_chars,
             "response_style": config.response_style,
+            "use_reranker": getattr(config, "use_reranker", False),
+            "rerank_top_n": getattr(config, "rerank_top_n", 8),
         }
 
         try:
@@ -229,8 +231,15 @@ if __name__ == "__main__":
     parser.add_argument("--min-chunk-size", type=int, default=RAGConfig.min_chunk_size)
     parser.add_argument("--max-chunk-size", type=int, default=RAGConfig.max_chunk_size)
     parser.add_argument("--top-k", type=int, default=RAGConfig.top_k)
-    parser.add_argument("--use-hybrid", action="store_true")
+    parser.add_argument("--use-hybrid", action="store_true", default=RAGConfig.use_hybrid)
+    parser.add_argument("--no-hybrid", action="store_false", dest="use_hybrid")
     parser.add_argument("--hybrid-weight", type=float, default=RAGConfig.hybrid_weight)
+    parser.add_argument("--use-mmr", action="store_true", default=RAGConfig.use_mmr)
+    parser.add_argument("--no-mmr", action="store_false", dest="use_mmr")
+    parser.add_argument("--mmr-lambda", type=float, default=RAGConfig.mmr_lambda)
+    parser.add_argument("--use-reranker", action="store_true", default=getattr(RAGConfig, "use_reranker", False))
+    parser.add_argument("--no-reranker", action="store_false", dest="use_reranker")
+    parser.add_argument("--rerank-top-n", type=int, default=getattr(RAGConfig, "rerank_top_n", 8))
     parser.add_argument("--max-output-tokens", type=int, default=RAGConfig.max_output_tokens)
     parser.add_argument("--max-context-chars", type=int, default=RAGConfig.max_context_chars)
     parser.add_argument("--max-doc-chars", type=int, default=RAGConfig.max_doc_chars)
@@ -248,6 +257,10 @@ if __name__ == "__main__":
         top_k=args.top_k,
         use_hybrid=args.use_hybrid,
         hybrid_weight=args.hybrid_weight,
+        use_mmr=args.use_mmr,
+        mmr_lambda=args.mmr_lambda,
+        use_reranker=getattr(args, "use_reranker", False),
+        rerank_top_n=getattr(args, "rerank_top_n", 8),
         max_output_tokens=args.max_output_tokens,
         max_context_chars=args.max_context_chars,
         max_doc_chars=args.max_doc_chars,

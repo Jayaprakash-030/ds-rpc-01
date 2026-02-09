@@ -71,7 +71,11 @@ def _header_key(chunk, level: int):
     return chunk.metadata.get(key)
 
 
-def _merge_sequential(chunks, min_chunk_size: int):
+def _merge_sequential(chunks, min_chunk_size: int, max_chunk_size: int):
+    """
+    Merge small header chunks within the same section, but never exceed max_chunk_size
+    so that we get section-aware chunks (e.g. Q2 vs Q3 benchmarks stay separate).
+    """
     merged = []
     buffer_doc = None
 
@@ -81,7 +85,9 @@ def _merge_sequential(chunks, min_chunk_size: int):
             buffer_doc = chunk
             continue
 
-        if len(buffer_doc.page_content) < min_chunk_size:
+        combined_len = len(buffer_doc.page_content) + 2 + len(content)
+        # Merge if buffer is still small, but never exceed max_chunk_size
+        if len(buffer_doc.page_content) < min_chunk_size and combined_len <= max_chunk_size:
             buffer_doc.page_content += "\n\n" + content
         else:
             merged.append(buffer_doc)
@@ -93,10 +99,11 @@ def _merge_sequential(chunks, min_chunk_size: int):
     return merged
 
 
-def merge_chunks_hierarchical(chunks, min_chunk_size: int):
+def merge_chunks_hierarchical(chunks, min_chunk_size: int, max_chunk_size: int):
     """
     Bottom-up merge:
     Merge Header 4 -> Header 3 -> Header 2 -> Header 1, never crossing parent boundaries.
+    Caps merged size at max_chunk_size so sections (e.g. Q2 vs Q3) stay in separate chunks.
     """
     def group_key(chunk, level: int):
         return tuple(_header_key(chunk, i) for i in range(1, level + 1))
@@ -110,13 +117,13 @@ def merge_chunks_hierarchical(chunks, min_chunk_size: int):
         for chunk in merged:
             key = group_key(chunk, level)
             if buffer and key != last_key:
-                grouped.extend(_merge_sequential(buffer, min_chunk_size))
+                grouped.extend(_merge_sequential(buffer, min_chunk_size, max_chunk_size))
                 buffer = []
             buffer.append(chunk)
             last_key = key
 
         if buffer:
-            grouped.extend(_merge_sequential(buffer, min_chunk_size))
+            grouped.extend(_merge_sequential(buffer, min_chunk_size, max_chunk_size))
 
         merged = grouped
 
@@ -144,8 +151,10 @@ def run_ingestion(config: RAGConfig, min_chunk_size: int = 1000, max_chunk_size:
     markdown_files = check_markdown_files(str(data_dir))
     markdown_chunks = split_markdown_documents(markdown_files)
 
-    # Merge small header chunks, then split only oversized chunks
-    merged_chunks = merge_chunks_hierarchical(markdown_chunks, min_chunk_size=min_chunk_size)
+    # Merge small header chunks (capped at max_chunk_size for section-aware chunks)
+    merged_chunks = merge_chunks_hierarchical(
+        markdown_chunks, min_chunk_size=min_chunk_size, max_chunk_size=max_chunk_size
+    )
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=max_chunk_size,
         chunk_overlap=config.chunk_overlap,
@@ -174,11 +183,11 @@ def run_ingestion(config: RAGConfig, min_chunk_size: int = 1000, max_chunk_size:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--chunk_size", type=int, default=1000)
-    parser.add_argument("--chunk_overlap", type=int, default=150)
-    parser.add_argument("--embedding_model", type=str, default="models/embedding-001")
-    parser.add_argument("--min_chunk_size", type=int, default=1000)
-    parser.add_argument("--max_chunk_size", type=int, default=1300)
+    parser.add_argument("--chunk_size", type=int, default=RAGConfig.chunk_size)
+    parser.add_argument("--chunk_overlap", type=int, default=RAGConfig.chunk_overlap)
+    parser.add_argument("--embedding_model", type=str, default=RAGConfig.embedding_model)
+    parser.add_argument("--min_chunk_size", type=int, default=RAGConfig.min_chunk_size)
+    parser.add_argument("--max_chunk_size", type=int, default=RAGConfig.max_chunk_size)
     args = parser.parse_args()
 
     config = RAGConfig(chunk_size=args.chunk_size, chunk_overlap=args.chunk_overlap, embedding_model=args.embedding_model)

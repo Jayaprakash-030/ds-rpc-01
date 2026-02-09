@@ -27,3 +27,6 @@ rank_bm25
 
 # experiment tracking and model management
 mlflow
+
+# optional: reranker for better context precision (install for use_reranker=True)
+sentence-transformers>=2.2.0

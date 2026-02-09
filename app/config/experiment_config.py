@@ -9,18 +9,23 @@ class RAGConfig:
     max_output_tokens: int = 512
     response_style: str = "default"
     
-    # Retrieval Settings
-    chunk_size: int = 1000
-    chunk_overlap: int = 150
-    top_k: int = 7
-    use_mmr: bool = False
+    # Retrieval Settings (quality-focused: smaller chunks + higher k + MMR)
+    chunk_size: int = 800
+    chunk_overlap: int = 100
+    top_k: int = 16
+    use_mmr: bool = True
     mmr_lambda: float = 0.5
-    use_hybrid: bool = False
-    hybrid_weight: float = 0.5
-    min_chunk_size: int = 1000
-    max_chunk_size: int = 1300
+    use_hybrid: bool = True
+    hybrid_weight: float = 0.6
+    min_chunk_size: int = 500
+    max_chunk_size: int = 800
     max_context_chars: int = 0
     max_doc_chars: int = 0
+    
+    # Reranker (optional): improves precision by selecting top chunks for context
+    use_reranker: bool = False
+    rerank_top_n: int = 8
+    reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
     
     # Evaluation Settings
     eval_judge_model: str = "gemini-2.5-flash"
