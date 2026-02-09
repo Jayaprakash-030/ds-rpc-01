@@ -1,19 +1,32 @@
-import mlflow
+from contextlib import nullcontext
+
+try:
+    import mlflow
+except ModuleNotFoundError:
+    mlflow = None
 import pandas as pd
 from pathlib import Path
 
 class RAGExperimentTracker:
     def __init__(self, experiment_name="RAG_Optimization"):
-        # Set the location where experiments are saved locally
-        mlflow.set_tracking_uri("file:./mlflow_runs")
-        mlflow.set_experiment(experiment_name)
+        self.enabled = mlflow is not None
+        if self.enabled:
+            # Set the location where experiments are saved locally
+            mlflow.set_tracking_uri("file:./mlflow_runs")
+            mlflow.set_experiment(experiment_name)
+        else:
+            print("[mlflow_tracker] mlflow not installed; running without MLflow logging.")
 
     def start_run(self, run_name):
         """Context manager for an MLflow run."""
+        if not self.enabled:
+            return nullcontext()
         return mlflow.start_run(run_name=run_name)
 
     def log_params(self, config_dict):
         """Logs all RAG hyperparameters."""
+        if not self.enabled:
+            return
         mlflow.log_params(config_dict)
 
     def log_metrics_from_csv(self, csv_path, metric_prefix=""):
@@ -54,14 +67,25 @@ class RAGExperimentTracker:
                 s = pd.to_numeric(df[col], errors="coerce").dropna()
                 if not s.empty:
                     metrics[f"{prefix}{col}_mean"] = float(s.mean())
+
+        # Prompt/answer size instrumentation if available
+        for col in ("context_chars", "context_docs", "answer_chars"):
+            if col in df.columns:
+                s = pd.to_numeric(df[col], errors="coerce").dropna()
+                if not s.empty:
+                    metrics[f"{prefix}{col}_mean"] = float(s.mean())
             
-        mlflow.log_metrics(metrics)
+        if self.enabled:
+            mlflow.log_metrics(metrics)
         
         # Attach the actual CSV file as an 'Artifact' for future proof
-        mlflow.log_artifact(csv_path)
+        if self.enabled:
+            mlflow.log_artifact(csv_path)
         
         return metrics
 
     def set_run_tags(self, tags):
         """Adds tags like 'dataset_type': 'multihop'."""
+        if not self.enabled:
+            return
         mlflow.set_tags(tags)

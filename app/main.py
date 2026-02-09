@@ -52,16 +52,41 @@ def test(user=Depends(authenticate)):
 
 # Protected chat endpoint
 @app.post("/chat")
-def query(user=Depends(authenticate), message: str = "Hello"):
+def query(
+    user=Depends(authenticate),
+    message: str = "Hello",
+    top_k: Optional[int] = None,
+    temperature: Optional[float] = None,
+    db_path: Optional[str] = None,
+    use_hybrid: Optional[bool] = None,
+    hybrid_weight: Optional[float] = None,
+    max_output_tokens: Optional[int] = None,
+    max_context_chars: Optional[int] = None,
+    max_doc_chars: Optional[int] = None,
+    response_style: Optional[str] = None,
+):
     # user["role"] comes from the authenticate dependency in your starter code
-    result = rag_service.get_response(message, user["role"])
+    result = rag_service.get_response(
+        message,
+        user["role"],
+        top_k=top_k,
+        temperature=temperature,
+        persist_directory=db_path,
+        use_hybrid=use_hybrid,
+        hybrid_weight=hybrid_weight,
+        max_output_tokens=max_output_tokens,
+        max_context_chars=max_context_chars,
+        max_doc_chars=max_doc_chars,
+        response_style=response_style,
+    )
     
     # We return the answer and the sources for citation [cite: 33]
     return {
         "answer": result["answer"],
         "sources": list(dict.fromkeys(doc.metadata.get("source") for doc in result["context"])),
         "role": user["role"],
-        "timings": result.get("timings", {})
+        "timings": result.get("timings", {}),
+        "stats": result.get("stats", {}),
     }
 
 
@@ -74,6 +99,12 @@ def query_test(
     db_path: Optional[str] = None,
     use_hybrid: Optional[bool] = None,
     hybrid_weight: Optional[float] = None,
+    use_mmr: Optional[bool] = None,
+    mmr_lambda: Optional[float] = None,
+    max_output_tokens: Optional[int] = None,
+    max_context_chars: Optional[int] = None,
+    max_doc_chars: Optional[int] = None,
+    response_style: Optional[str] = None,
 ):
     result = rag_service.get_response(
         message,
@@ -83,11 +114,18 @@ def query_test(
         persist_directory=db_path,
         use_hybrid=use_hybrid,
         hybrid_weight=hybrid_weight,
+        use_mmr=use_mmr,
+        mmr_lambda=mmr_lambda,
+        max_output_tokens=max_output_tokens,
+        max_context_chars=max_context_chars,
+        max_doc_chars=max_doc_chars,
+        response_style=response_style,
     )
     return {
         "answer": result["answer"],
         "sources": list(dict.fromkeys(doc.metadata.get("source") for doc in result["context"])),
         "retrieved_contexts": [doc.page_content for doc in result["context"]],
         "role": "c-level",
-        "timings": result.get("timings", {})
+        "timings": result.get("timings", {}),
+        "stats": result.get("stats", {}),
     }
