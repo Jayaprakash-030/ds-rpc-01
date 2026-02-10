@@ -35,23 +35,23 @@ class RAGExperimentTracker:
         """
         df = pd.read_csv(csv_path)
         
-        # Determine metrics based on available columns
+        # Determine metrics based on available columns (RAGAS-only; no bot evaluation agent)
         prefix = f"{metric_prefix}_" if metric_prefix else ""
-        metrics = {
-            f"{prefix}avg_retrieval_quality": df["score_retrieval_quality"].mean(),
-            f"{prefix}avg_faithfulness": df["score_llm_faithfulness"].mean()
-        }
-        
-        # Add the specific hop-type metric
-        if "score_reasoning_quality" in df.columns:
-            metrics[f"{prefix}avg_reasoning_quality"] = df["score_reasoning_quality"].mean()
-        elif "score_answer_relevance" in df.columns:
-            metrics[f"{prefix}avg_answer_relevance"] = df["score_answer_relevance"].mean()
+        metrics = {}
+
+        # RAGAS metrics
+        for col in ("context_precision", "context_recall", "faithfulness", "answer_relevancy"):
+            if col in df.columns:
+                s = pd.to_numeric(df[col], errors="coerce").dropna()
+                if not s.empty:
+                    metrics[f"{prefix}avg_{col}"] = float(s.mean())
 
         # Retrieval + context metrics if available
-        for col in ("precision", "recall", "context_precision", "context_recall", "retrieved_contexts_count"):
+        for col in ("precision", "recall", "retrieved_contexts_count"):
             if col in df.columns:
-                metrics[f"{prefix}avg_{col}"] = df[col].mean()
+                s = pd.to_numeric(df[col], errors="coerce").dropna()
+                if not s.empty:
+                    metrics[f"{prefix}avg_{col}"] = float(s.mean())
 
         # Latency percentiles (ms) if available
         if "latency_ms" in df.columns:
@@ -68,13 +68,6 @@ class RAGExperimentTracker:
                 if not s.empty:
                     metrics[f"{prefix}{col}_mean"] = float(s.mean())
 
-        # Prompt/answer size instrumentation if available
-        for col in ("context_chars", "context_docs", "answer_chars"):
-            if col in df.columns:
-                s = pd.to_numeric(df[col], errors="coerce").dropna()
-                if not s.empty:
-                    metrics[f"{prefix}{col}_mean"] = float(s.mean())
-            
         if self.enabled:
             mlflow.log_metrics(metrics)
         

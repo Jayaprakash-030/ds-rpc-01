@@ -12,7 +12,6 @@ from app.utils.mlflow_tracker import RAGExperimentTracker
 
 INGEST_SCRIPT = REPO_ROOT / "app" / "scripts" / "ingest_docs.py"
 RESPONSES_SCRIPT = REPO_ROOT / "app" / "scripts" / "run_responses.py"
-EVAL_SCRIPT = REPO_ROOT / "app" / "utils" / "bot_answer_evaluation_agent.py"
 
 SINGLE_RESULTS = REPO_ROOT / "results" / "singlehop_dataset_responses.csv"
 MULTI_RESULTS = REPO_ROOT / "results" / "multihop_dataset_responses.csv"
@@ -62,15 +61,7 @@ def run_experiment_pipeline(cfg: RAGConfig, run_name: str, dataset_type: str):
             for ds in datasets:
                 tracker.set_run_tags({"dataset": ds})
                 results_file = SINGLE_RESULTS if ds == "simple" else MULTI_RESULTS
-
-                run_step([
-                    sys.executable, str(EVAL_SCRIPT),
-                    "--files", str(results_file),
-                    "--eval-judge-model", cfg.eval_judge_model
-                ], f"EVALUATION ({ds})")
-
-                evaluated_file = str(results_file).replace(".csv", "_automated_eval.csv")
-                tracker.log_metrics_from_csv(evaluated_file, metric_prefix=ds)
+                tracker.log_metrics_from_csv(str(results_file), metric_prefix=ds)
 
             tracker.set_run_tags({"status": "completed"})
             print(f" Run '{run_name}' successfully completed and logged.")

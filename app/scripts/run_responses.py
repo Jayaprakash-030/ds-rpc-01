@@ -9,10 +9,12 @@ from pathlib import Path
 import pandas as pd
 import requests
 from dotenv import load_dotenv
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from ragas.evaluation import EvaluationDataset, LangchainLLMWrapper, SingleTurnSample, evaluate
 from ragas.metrics._context_precision import ContextPrecision
 from ragas.metrics._context_recall import ContextRecall
+from ragas.metrics._faithfulness import Faithfulness
+from ragas.metrics._answer_relevance import AnswerRelevancy
 
 BASE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = BASE_DIR.parents[1]
@@ -120,7 +122,6 @@ def run_responses(config: RAGConfig, api_url: str, dataset_path: Path, output_pa
         retrieved_sources = normalize_sources(data.get("sources", []))
         retrieved_contexts = data.get("retrieved_contexts", [])
         timings = data.get("timings", {}) or {}
-        stats = data.get("stats", {}) or {}
 
         reference_sources = normalize_sources(coerce_list(row.get("reference_sources", [])))
         precision, recall, matched = compute_precision_recall(retrieved_sources, reference_sources)
@@ -141,17 +142,12 @@ def run_responses(config: RAGConfig, api_url: str, dataset_path: Path, output_pa
             "recall": round(recall, 4),
             "context_precision": "",
             "context_recall": "",
+            "faithfulness": "",
+            "answer_relevancy": "",
             "latency_ms": round(latency_ms, 2),
             "retrieval_ms": timings.get("retrieval_ms", ""),
             "generation_ms": timings.get("generation_ms", ""),
             "total_ms": timings.get("total_ms", ""),
-            "context_chars": stats.get("context_chars", ""),
-            "context_docs": stats.get("context_docs", ""),
-            "answer_chars": stats.get("answer_chars", ""),
-            "score_retrieval_quality": "",
-            "score_llm_faithfulness": "",
-            "score_reasoning_quality": "",
-            "error_type": "",
         })
 
         ragas_samples.append(SingleTurnSample(
@@ -159,6 +155,7 @@ def run_responses(config: RAGConfig, api_url: str, dataset_path: Path, output_pa
             retrieved_contexts=[str(c).strip() for c in retrieved_contexts if c],
             reference_contexts=[str(c).strip() for c in reference_contexts if c],
             reference=ground_truth or "",
+            response=bot_answer or "",
         ))
 
     if not results:
@@ -177,11 +174,21 @@ def run_responses(config: RAGConfig, api_url: str, dataset_path: Path, output_pa
         temperature=0.0,
         convert_system_message_to_human=True,
     )
+    ragas_embeddings = GoogleGenerativeAIEmbeddings(
+        model=config.embedding_model,
+        google_api_key=api_key,
+    )
     ragas_dataset = build_ragas_dataset(ragas_samples)
     ragas_result = evaluate(
         ragas_dataset,
-        metrics=[ContextPrecision(), ContextRecall()],
+        metrics=[
+            ContextPrecision(),
+            ContextRecall(),
+            Faithfulness(),
+            AnswerRelevancy(),
+        ],
         llm=LangchainLLMWrapper(ragas_llm),
+        embeddings=ragas_embeddings,
         show_progress=True,
     )
     ragas_df = ragas_result.to_pandas()
@@ -190,12 +197,20 @@ def run_responses(config: RAGConfig, api_url: str, dataset_path: Path, output_pa
             break
         ctx_precision = row.get("context_precision")
         ctx_recall = row.get("context_recall")
+        faithfulness_val = row.get("faithfulness")
+        answer_relevancy_val = row.get("answer_relevancy")
         if pd.isna(ctx_precision):
             ctx_precision = 0.0
         if pd.isna(ctx_recall):
             ctx_recall = 0.0
+        if pd.isna(faithfulness_val):
+            faithfulness_val = 0.0
+        if pd.isna(answer_relevancy_val):
+            answer_relevancy_val = 0.0
         results[idx]["context_precision"] = round(float(ctx_precision), 4)
         results[idx]["context_recall"] = round(float(ctx_recall), 4)
+        results[idx]["faithfulness"] = round(float(faithfulness_val), 4)
+        results[idx]["answer_relevancy"] = round(float(answer_relevancy_val), 4)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(results).to_csv(output_path, index=False)
