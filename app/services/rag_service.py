@@ -99,7 +99,12 @@ class RAGService:
             vector_retriever = vectorstore.as_retriever(search_kwargs=search_kwargs)
 
         if use_hybrid:
-            bm25_retriever = self._build_bm25_retriever(vectorstore, fetch_k)
+            # BM25 should respect the same RBAC filter as the vector retriever.
+            # C-level can see everything; others see their role + general.
+            allowed_roles = None
+            if user_role.lower() != "c-level":
+                allowed_roles = [user_role.lower(), "general"]
+            bm25_retriever = self._build_bm25_retriever(vectorstore, fetch_k, allowed_roles)
             if os.getenv("RAG_DEBUG_RETRIEVER", "").lower() in {"1", "true", "yes"}:
                 try:
                     vec_docs = vector_retriever.get_relevant_documents(query)
@@ -241,7 +246,7 @@ class RAGService:
         indexed.sort(key=lambda x: x[0], reverse=True)
         return [docs[i] for _, i in indexed[:top_n]]
 
-    def _build_bm25_retriever(self, vectorstore, k: int):
+    def _build_bm25_retriever(self, vectorstore, k: int, allowed_roles: Optional[List[str]] = None):
         try:
             store = vectorstore.get(include=["documents", "metadatas"])
         except Exception:
@@ -249,6 +254,12 @@ class RAGService:
 
         documents = []
         for content, metadata in zip(store.get("documents", []), store.get("metadatas", [])):
+            # Apply role-based filtering for BM25 as well, so that
+            # non c-level users only see their department + general docs.
+            if allowed_roles is not None:
+                role = (metadata or {}).get("role")
+                if role not in allowed_roles:
+                    continue
             documents.append(Document(page_content=content, metadata=metadata))
 
         if not documents:

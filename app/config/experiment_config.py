@@ -9,16 +9,16 @@ class RAGConfig:
     max_output_tokens: int = 512
     response_style: str = "default"
     
-    # Retrieval Settings (quality-focused: smaller chunks + higher k + MMR)
-    chunk_size: int = 800
+    # Retrieval Settings (Exp_2: tighter chunks, hybrid, no MMR — prod default)
+    chunk_size: int = 650
     chunk_overlap: int = 100
     top_k: int = 16
-    use_mmr: bool = True
+    use_mmr: bool = False
     mmr_lambda: float = 0.5
     use_hybrid: bool = True
     hybrid_weight: float = 0.6
-    min_chunk_size: int = 500
-    max_chunk_size: int = 800
+    min_chunk_size: int = 400
+    max_chunk_size: int = 650
     max_context_chars: int = 0
     max_doc_chars: int = 0
     

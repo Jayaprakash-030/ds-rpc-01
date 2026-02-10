@@ -27,7 +27,7 @@ from app.config.experiment_config import RAGConfig
 ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
 load_dotenv(ENV_PATH)
 
-DEFAULT_API_URL = "http://localhost:8001/chat_test"
+DEFAULT_API_URL = "http://localhost:8002/chat_test"
 
 
 def coerce_list(value):

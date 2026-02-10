@@ -7,7 +7,7 @@ import streamlit as st
 from requests import exceptions as requests_exceptions
 
 # 1. Configuration
-BASE_URL = os.getenv("BACKEND_URL", "https://finsolve-backend-278963574842.us-central1.run.app")  #http://localhost:8000
+BASE_URL = os.getenv("BACKEND_URL", "https://finsolve-api-278963574842.us-central1.run.app")  #http://localhost:8000
 REQUEST_TIMEOUT_SECONDS = 30
 st.set_page_config(page_title="FinSolve Secure Chat", layout="wide")
 

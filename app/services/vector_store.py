@@ -19,9 +19,12 @@ class VectorStoreManager:
             model=self.config.embedding_model,
             google_api_key=os.getenv("GOOGLE_API_KEY")
         )
-        # Point to a local directory to save the database
+        # Point to a local directory to save/load the database
         if persist_directory:
             self.persist_directory = persist_directory
+        elif os.getenv("PERSIST_DIRECTORY"):
+            # e.g. Cloud Run: pack Exp_2 DB in chroma_db and set PERSIST_DIRECTORY=/app/chroma_db
+            self.persist_directory = os.getenv("PERSIST_DIRECTORY")
         else:
             model_short_name = self.config.embedding_model.split("/")[-1]
             self.persist_directory = f"./vector_db/db_{model_short_name}_ch_{self.config.chunk_size}"

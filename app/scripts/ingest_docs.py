@@ -143,7 +143,7 @@ def load_hr_csv(csv_path):
     print(f"Loaded {len(docs)} HR CSV rows.")
     return docs
 
-def run_ingestion(config: RAGConfig, min_chunk_size: int = 1000, max_chunk_size: int = 1300):
+def run_ingestion(config: RAGConfig, min_chunk_size: int = 1000, max_chunk_size: int = 1300, output_dir: str | None = None):
     print(f"--- Ingesting with Min/Max Chunk Size: {min_chunk_size}/{max_chunk_size} ---")
     data_dir = ROOT_DIR / "resources" / "data"
     hr_csv_path = data_dir / "hr" / "hr_data.csv"
@@ -170,14 +170,18 @@ def run_ingestion(config: RAGConfig, min_chunk_size: int = 1000, max_chunk_size:
     all_chunks = final_markdown_chunks + hr_csv_chunks
     print(f"Total final chunks: {len(all_chunks)}")
 
-    # Save to a versioned directory so we don't overwrite baselines
-    model_short_name = config.embedding_model.split("/")[-1]
-    db_name = f"db_{model_short_name}_cs{max_chunk_size}"
-    db_path = ROOT_DIR / "vector_db" / db_name
+    # Save: use output_dir (e.g. chroma_db for Docker bake) or default vector_db/db_xxx_csN
+    if output_dir:
+        db_path = ROOT_DIR / output_dir
+    else:
+        model_short_name = config.embedding_model.split("/")[-1]
+        db_name = f"db_{model_short_name}_cs{max_chunk_size}"
+        db_path = ROOT_DIR / "vector_db" / db_name
     db_path.mkdir(parents=True, exist_ok=True)
 
     vm = VectorStoreManager(config=config, persist_directory=str(db_path))
     vm.create_or_get_vectorstore(all_chunks)
+    print(f"DB written to: {db_path}")
     return str(db_path)
 
 
@@ -188,6 +192,12 @@ if __name__ == "__main__":
     parser.add_argument("--embedding_model", type=str, default=RAGConfig.embedding_model)
     parser.add_argument("--min_chunk_size", type=int, default=RAGConfig.min_chunk_size)
     parser.add_argument("--max_chunk_size", type=int, default=RAGConfig.max_chunk_size)
+    parser.add_argument(
+        "--output_dir",
+        type=str,
+        default=None,
+        help="Write DB here (e.g. chroma_db for Docker). Default: vector_db/db_<model>_cs<max_chunk_size>",
+    )
     args = parser.parse_args()
 
     config = RAGConfig(chunk_size=args.chunk_size, chunk_overlap=args.chunk_overlap, embedding_model=args.embedding_model)
@@ -195,4 +205,5 @@ if __name__ == "__main__":
         config,
         min_chunk_size=args.min_chunk_size,
         max_chunk_size=args.max_chunk_size,
+        output_dir=args.output_dir,
     )

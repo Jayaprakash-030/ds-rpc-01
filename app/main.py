@@ -50,7 +50,7 @@ def login(user=Depends(authenticate)):
 def test(user=Depends(authenticate)):
     return {"message": f"Hello {user['username']}! You can now chat.", "role": user["role"]}
 
-# Protected chat endpoint
+# Protected chat endpoint (same params and response shape as /chat_test, with auth)
 @app.post("/chat")
 def query(
     user=Depends(authenticate),
@@ -60,6 +60,8 @@ def query(
     db_path: Optional[str] = None,
     use_hybrid: Optional[bool] = None,
     hybrid_weight: Optional[float] = None,
+    use_mmr: Optional[bool] = None,
+    mmr_lambda: Optional[float] = None,
     use_reranker: Optional[bool] = None,
     rerank_top_n: Optional[int] = None,
     max_output_tokens: Optional[int] = None,
@@ -67,7 +69,6 @@ def query(
     max_doc_chars: Optional[int] = None,
     response_style: Optional[str] = None,
 ):
-    # user["role"] comes from the authenticate dependency in your starter code
     result = rag_service.get_response(
         message,
         user["role"],
@@ -76,6 +77,8 @@ def query(
         persist_directory=db_path,
         use_hybrid=use_hybrid,
         hybrid_weight=hybrid_weight,
+        use_mmr=use_mmr,
+        mmr_lambda=mmr_lambda,
         use_reranker=use_reranker,
         rerank_top_n=rerank_top_n,
         max_output_tokens=max_output_tokens,
@@ -83,14 +86,11 @@ def query(
         max_doc_chars=max_doc_chars,
         response_style=response_style,
     )
-    
-    # We return the answer and the sources for citation [cite: 33]
+    # Response for frontend: answer + sources (and role for display)
     return {
         "answer": result["answer"],
         "sources": list(dict.fromkeys(doc.metadata.get("source") for doc in result["context"])),
         "role": user["role"],
-        "timings": result.get("timings", {}),
-        "stats": result.get("stats", {}),
     }
 
 
