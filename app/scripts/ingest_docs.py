@@ -9,7 +9,7 @@ print(f"Root dir: {ROOT_DIR}")
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from app.config.experiment_config import RAGConfig
+from app.config.rag_config import RAGConfig
 from langchain_community.document_loaders import DirectoryLoader, TextLoader, CSVLoader
 from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
 from app.services.vector_store import VectorStoreManager
@@ -170,13 +170,11 @@ def run_ingestion(config: RAGConfig, min_chunk_size: int = 1000, max_chunk_size:
     all_chunks = final_markdown_chunks + hr_csv_chunks
     print(f"Total final chunks: {len(all_chunks)}")
 
-    # Save: use output_dir (e.g. chroma_db for Docker bake) or default vector_db/db_xxx_csN
+    # Production uses one canonical database unless an explicit output directory is provided.
     if output_dir:
         db_path = ROOT_DIR / output_dir
     else:
-        model_short_name = config.embedding_model.split("/")[-1]
-        db_name = f"db_{model_short_name}_cs{max_chunk_size}"
-        db_path = ROOT_DIR / "vector_db" / db_name
+        db_path = ROOT_DIR / "chroma_db"
     db_path.mkdir(parents=True, exist_ok=True)
 
     vm = VectorStoreManager(config=config, persist_directory=str(db_path))
@@ -196,7 +194,7 @@ if __name__ == "__main__":
         "--output_dir",
         type=str,
         default=None,
-        help="Write DB here (e.g. chroma_db for Docker). Default: vector_db/db_<model>_cs<max_chunk_size>",
+        help="Write DB here. Default: chroma_db",
     )
     args = parser.parse_args()
 

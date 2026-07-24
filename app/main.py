@@ -1,139 +1,85 @@
-import os
-from typing import Dict, Optional
-
+from pydantic import BaseModel
 from fastapi import Depends, FastAPI, HTTPException
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from app.config.experiment_config import RAGConfig
+from fastapi.security import HTTPBasic, HTTPBasicCredentials, HTTPAuthorizationCredentials, HTTPBearer
+
+from app.auth import authenticate_user, create_access_token, decode_access_token
+from app.config.rag_config import RAGConfig
 from app.services.rag_service import RAGService
 
 
 app = FastAPI()
 security = HTTPBasic(auto_error=False)
+bearer_security = HTTPBearer(auto_error=False)
 rag_config = RAGConfig()
 rag_service = RAGService(config=rag_config)
 
-AUTH_BYPASS = os.getenv("AUTH_BYPASS", "").lower() in {"1", "true", "yes"}
-
-# Dummy user database
-users_db: Dict[str, Dict[str, str]] = {
-    "Tony": {"password": "password123", "role": "engineering"},
-    "Bruce": {"password": "securepass", "role": "marketing"},
-    "Sam": {"password": "financepass", "role": "finance"},
-    "Peter": {"password": "pete123", "role": "engineering"},
-    "Sid": {"password": "sidpass123", "role": "marketing"},
-    "Natasha": {"password": "hrpass123", "role": "hr"}
-}
-
-
 # Authentication dependency
 def authenticate(credentials: HTTPBasicCredentials | None = Depends(security)):
-    if AUTH_BYPASS:
-        return {"username": "eval", "role": "c-level"}
     if credentials is None:
+        raise HTTPException(401, detail="Invalid credentials")
+    try:
+        user = authenticate_user(credentials.username, credentials.password)
+    except ValueError:
+        raise HTTPException(status_code=500, detail="Authentication is not configured")
+    if user is None:
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    username = credentials.username
-    password = credentials.password
-    user = users_db.get(username)
-    if not user or user.get("password") != password:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    return {"username": username, "role": user["role"]}
+    return {"username": user.username, "role": user.role}
 
+def authenticate_token(credentials: HTTPAuthorizationCredentials | None = Depends(bearer_security)):
+    if credentials is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Bearer token required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    try:
+        user = decode_access_token(credentials.credentials)
+    except ValueError:
+        raise HTTPException(
+            status_code=500,
+            detail="Authentication is not configured",
+        )
+
+    if user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return user
 
 # Login endpoint
-@app.get("/login")
+@app.post("/login")
 def login(user=Depends(authenticate)):
-    return {"message": f"Welcome {user['username']}!", "role": user["role"]}
-
+    access_token = create_access_token(user['username'], user['role'])
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
 
 # Protected test endpoint
 @app.get("/test")
-def test(user=Depends(authenticate)):
+def test(user=Depends(authenticate_token)):
     return {"message": f"Hello {user['username']}! You can now chat.", "role": user["role"]}
 
-# Protected chat endpoint (same params and response shape as /chat_test, with auth)
+class ChatRequest(BaseModel):
+    message: str
+
+# Protected production chat endpoint
 @app.post("/chat")
 def query(
-    user=Depends(authenticate),
-    message: str = "Hello",
-    top_k: Optional[int] = None,
-    temperature: Optional[float] = None,
-    db_path: Optional[str] = None,
-    use_hybrid: Optional[bool] = None,
-    hybrid_weight: Optional[float] = None,
-    use_mmr: Optional[bool] = None,
-    mmr_lambda: Optional[float] = None,
-    use_reranker: Optional[bool] = None,
-    rerank_top_n: Optional[int] = None,
-    max_output_tokens: Optional[int] = None,
-    max_context_chars: Optional[int] = None,
-    max_doc_chars: Optional[int] = None,
-    response_style: Optional[str] = None,
+    message: ChatRequest,
+    user=Depends(authenticate_token),
 ):
     result = rag_service.get_response(
-        message,
-        user["role"],
-        top_k=top_k,
-        temperature=temperature,
-        persist_directory=db_path,
-        use_hybrid=use_hybrid,
-        hybrid_weight=hybrid_weight,
-        use_mmr=use_mmr,
-        mmr_lambda=mmr_lambda,
-        use_reranker=use_reranker,
-        rerank_top_n=rerank_top_n,
-        max_output_tokens=max_output_tokens,
-        max_context_chars=max_context_chars,
-        max_doc_chars=max_doc_chars,
-        response_style=response_style,
+        message.message,
+        user_role=user["role"],
     )
     # Response for frontend: answer + sources (and role for display)
     return {
         "answer": result["answer"],
         "sources": list(dict.fromkeys(doc.metadata.get("source") for doc in result["context"])),
         "role": user["role"],
-    }
-
-
-# Test-only endpoint (no auth)
-@app.post("/chat_test")
-def query_test(
-    message: str = "Hello",
-    top_k: Optional[int] = None,
-    temperature: Optional[float] = None,
-    db_path: Optional[str] = None,
-    use_hybrid: Optional[bool] = None,
-    hybrid_weight: Optional[float] = None,
-    use_mmr: Optional[bool] = None,
-    mmr_lambda: Optional[float] = None,
-    max_output_tokens: Optional[int] = None,
-    max_context_chars: Optional[int] = None,
-    max_doc_chars: Optional[int] = None,
-    response_style: Optional[str] = None,
-    use_reranker: Optional[bool] = None,
-    rerank_top_n: Optional[int] = None,
-):
-    result = rag_service.get_response(
-        message,
-        "c-level",
-        top_k=top_k,
-        temperature=temperature,
-        persist_directory=db_path,
-        use_hybrid=use_hybrid,
-        hybrid_weight=hybrid_weight,
-        use_mmr=use_mmr,
-        mmr_lambda=mmr_lambda,
-        max_output_tokens=max_output_tokens,
-        max_context_chars=max_context_chars,
-        max_doc_chars=max_doc_chars,
-        response_style=response_style,
-        use_reranker=use_reranker,
-        rerank_top_n=rerank_top_n,
-    )
-    return {
-        "answer": result["answer"],
-        "sources": list(dict.fromkeys(doc.metadata.get("source") for doc in result["context"])),
-        "retrieved_contexts": [doc.page_content for doc in result["context"]],
-        "role": "c-level",
-        "timings": result.get("timings", {}),
-        "stats": result.get("stats", {}),
     }

@@ -4,12 +4,11 @@ uvicorn[standard]==0.27.1
 streamlit==1.32.0
 python-dotenv==1.0.1
 
-# --- LangChain & Gemini Ecosystem ---
+# --- LangChain & OpenAI Ecosystem ---
 langchain==0.1.13
 langchain-core==0.1.53
-langchain-google-genai==1.0.1
+langchain-openai==0.1.7
 langchain-chroma==0.1.0        
-google-generativeai==0.4.1
 
 # --- Database & Document Processing ---
 chromadb==0.4.24               
@@ -25,8 +24,5 @@ datasets
 langchain-community
 rank_bm25
 
-# experiment tracking and model management
-mlflow
-
-# optional: reranker for better context precision (install for use_reranker=True)
-sentence-transformers>=2.2.0
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0

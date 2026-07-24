@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY ./app ./app
 COPY ./resources ./resources
 
-# Copy the ChromaDB directory (use Exp_2 DB built with min 400 / max 650 chunks)
+# Copy the canonical production database.
 COPY ./chroma_db ./chroma_db
 ENV PERSIST_DIRECTORY=/app/chroma_db
 

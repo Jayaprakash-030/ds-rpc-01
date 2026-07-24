@@ -1,42 +1,61 @@
+import hashlib
+import json
 import os
 from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
 from langchain_chroma import Chroma
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from app.config.experiment_config import RAGConfig
+from langchain_openai import OpenAIEmbeddings
+from app.config.rag_config import RAGConfig
 
 # Load the .env relative to the repo root so it works no matter the CWD
 ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
 load_dotenv(ENV_PATH)
 
+
+def _document_ids(chunks):
+    occurrences = {}
+    ids = []
+    for chunk in chunks:
+        metadata = json.dumps(chunk.metadata, sort_keys=True, default=str)
+        identity = f"{metadata}\0{chunk.page_content}"
+        occurrence = occurrences.get(identity, 0)
+        occurrences[identity] = occurrence + 1
+        digest = hashlib.sha256(f"{identity}\0{occurrence}".encode()).hexdigest()
+        ids.append(digest)
+    return ids
+
+
 class VectorStoreManager:
     def __init__(self, config: Optional[RAGConfig] = None, persist_directory: Optional[str] = None):
         self.config = config or RAGConfig()
-        # Initialize Gemini's embedding model
-        self.embeddings = GoogleGenerativeAIEmbeddings(
+        self.embeddings = OpenAIEmbeddings(
             model=self.config.embedding_model,
-            google_api_key=os.getenv("GOOGLE_API_KEY")
+            openai_api_key=os.getenv("OPENAI_API_KEY"),
         )
         # Point to a local directory to save/load the database
         if persist_directory:
             self.persist_directory = persist_directory
         elif os.getenv("PERSIST_DIRECTORY"):
-            # e.g. Cloud Run: pack Exp_2 DB in chroma_db and set PERSIST_DIRECTORY=/app/chroma_db
             self.persist_directory = os.getenv("PERSIST_DIRECTORY")
         else:
-            model_short_name = self.config.embedding_model.split("/")[-1]
-            self.persist_directory = f"./vector_db/db_{model_short_name}_ch_{self.config.chunk_size}"
+            self.persist_directory = str(
+                Path(__file__).resolve().parents[2] / "chroma_db"
+            )
         
     def create_or_get_vectorstore(self, chunks=None):
         if chunks:
-            # Create a new store from chunks and save to disk 
+            ids = _document_ids(chunks)
             vectorstore = Chroma.from_documents(
                 documents=chunks,
                 embedding=self.embeddings,
-                persist_directory=self.persist_directory
+                ids=ids,
+                persist_directory=self.persist_directory,
             )
+            stale_ids = set(vectorstore.get(include=[])["ids"]) - set(ids)
+            if stale_ids:
+                vectorstore.delete(ids=list(stale_ids))
             print(f"Successfully stored {len(chunks)} chunks in {self.persist_directory}")
         else:
             # Load the existing store from disk 

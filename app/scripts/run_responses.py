@@ -9,7 +9,7 @@ from pathlib import Path
 import pandas as pd
 import requests
 from dotenv import load_dotenv
-from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from ragas.evaluation import EvaluationDataset, LangchainLLMWrapper, SingleTurnSample, evaluate
 from ragas.metrics._context_precision import ContextPrecision
 from ragas.metrics._context_recall import ContextRecall
@@ -21,7 +21,7 @@ REPO_ROOT = BASE_DIR.parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from app.config.experiment_config import RAGConfig
+from app.config.rag_config import RAGConfig
 
 # Load .env relative to repo root so scripts work from any CWD
 ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
@@ -96,16 +96,11 @@ def run_responses(config: RAGConfig, api_url: str, dataset_path: Path, output_pa
             "top_k": config.top_k,
             "temperature": config.temperature,
             "db_path": f"./vector_db/db_{config.embedding_model.split('/')[-1]}_cs{db_chunk_size}",
-            "use_hybrid": config.use_hybrid,
             "hybrid_weight": config.hybrid_weight,
-            "use_mmr": config.use_mmr,
-            "mmr_lambda": config.mmr_lambda,
             "max_output_tokens": config.max_output_tokens,
             "max_context_chars": config.max_context_chars,
             "max_doc_chars": config.max_doc_chars,
             "response_style": config.response_style,
-            "use_reranker": getattr(config, "use_reranker", False),
-            "rerank_top_n": getattr(config, "rerank_top_n", 8),
         }
 
         try:
@@ -164,19 +159,18 @@ def run_responses(config: RAGConfig, api_url: str, dataset_path: Path, output_pa
             "accessible, and that requests are succeeding."
         )
 
-    api_key = os.getenv("GOOGLE_API_KEY")
+    api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        raise RuntimeError("GOOGLE_API_KEY is not set; required for RAGAS context metrics.")
+        raise RuntimeError("OPENAI_API_KEY is not set; required for RAGAS context metrics.")
 
-    ragas_llm = ChatGoogleGenerativeAI(
+    ragas_llm = ChatOpenAI(
         model=config.eval_judge_model,
-        google_api_key=api_key,
+        openai_api_key=api_key,
         temperature=0.0,
-        convert_system_message_to_human=True,
     )
-    ragas_embeddings = GoogleGenerativeAIEmbeddings(
+    ragas_embeddings = OpenAIEmbeddings(
         model=config.embedding_model,
-        google_api_key=api_key,
+        openai_api_key=api_key,
     )
     ragas_dataset = build_ragas_dataset(ragas_samples)
     ragas_result = evaluate(
@@ -246,15 +240,7 @@ if __name__ == "__main__":
     parser.add_argument("--min-chunk-size", type=int, default=RAGConfig.min_chunk_size)
     parser.add_argument("--max-chunk-size", type=int, default=RAGConfig.max_chunk_size)
     parser.add_argument("--top-k", type=int, default=RAGConfig.top_k)
-    parser.add_argument("--use-hybrid", action="store_true", default=RAGConfig.use_hybrid)
-    parser.add_argument("--no-hybrid", action="store_false", dest="use_hybrid")
     parser.add_argument("--hybrid-weight", type=float, default=RAGConfig.hybrid_weight)
-    parser.add_argument("--use-mmr", action="store_true", default=RAGConfig.use_mmr)
-    parser.add_argument("--no-mmr", action="store_false", dest="use_mmr")
-    parser.add_argument("--mmr-lambda", type=float, default=RAGConfig.mmr_lambda)
-    parser.add_argument("--use-reranker", action="store_true", default=getattr(RAGConfig, "use_reranker", False))
-    parser.add_argument("--no-reranker", action="store_false", dest="use_reranker")
-    parser.add_argument("--rerank-top-n", type=int, default=getattr(RAGConfig, "rerank_top_n", 8))
     parser.add_argument("--max-output-tokens", type=int, default=RAGConfig.max_output_tokens)
     parser.add_argument("--max-context-chars", type=int, default=RAGConfig.max_context_chars)
     parser.add_argument("--max-doc-chars", type=int, default=RAGConfig.max_doc_chars)
@@ -270,12 +256,7 @@ if __name__ == "__main__":
         min_chunk_size=args.min_chunk_size,
         max_chunk_size=args.max_chunk_size,
         top_k=args.top_k,
-        use_hybrid=args.use_hybrid,
         hybrid_weight=args.hybrid_weight,
-        use_mmr=args.use_mmr,
-        mmr_lambda=args.mmr_lambda,
-        use_reranker=getattr(args, "use_reranker", False),
-        rerank_top_n=getattr(args, "rerank_top_n", 8),
         max_output_tokens=args.max_output_tokens,
         max_context_chars=args.max_context_chars,
         max_doc_chars=args.max_doc_chars,

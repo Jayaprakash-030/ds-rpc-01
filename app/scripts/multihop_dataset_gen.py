@@ -10,10 +10,10 @@ from dotenv import load_dotenv
 # --- Ragas & LangChain ---
 from ragas.testset import TestsetGenerator
 from ragas.testset.synthesizers import MultiHopSpecificQuerySynthesizer, SingleHopSpecificQuerySynthesizer
-from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 
-# 1. FIX: Patch the event loop for Google/Ragas async conflict
+# Patch the event loop for RAGAS async generation.
 nest_asyncio.apply()
 
 load_dotenv()
@@ -21,9 +21,16 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = BASE_DIR.parents[1]
 
-# 2. Setup Gemini
-llm_instance = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=os.getenv("GOOGLE_API_KEY"))
-emb_instance = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+# 2. Setup OpenAI
+llm_instance = ChatOpenAI(
+    model="gpt-5.4-mini-2026-03-17",
+    openai_api_key=os.getenv("OPENAI_API_KEY"),
+    temperature=0.0,
+)
+emb_instance = OpenAIEmbeddings(
+    model="text-embedding-3-small",
+    openai_api_key=os.getenv("OPENAI_API_KEY"),
+)
 
 # 3. Load Docs
 def load_docs():

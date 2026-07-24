@@ -4,14 +4,16 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 import pandas as pd
-import google.generativeai as genai
+from langchain_openai import ChatOpenAI
 
 ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
 load_dotenv(ENV_PATH)
 
-# --- CONFIGURATION ---
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-model = genai.GenerativeModel('gemini-2.5-flash')
+model = ChatOpenAI(
+    model="gpt-5.4-mini-2026-03-17",
+    openai_api_key=os.getenv("OPENAI_API_KEY"),
+    temperature=0.0,
+)
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 DATA_PATH = str(ROOT_DIR / "resources" / "data")
@@ -32,11 +34,11 @@ GROUND_TRUTH: <Detailed, accurate answer based ONLY on the context>
 
 def generate_qa_pair(context_text):
     """Generates a Q&A pair with a small delay to respect API rate limits."""
-    time.sleep(1) # Rate limiting for Gemini Flash
-    response = model.generate_content(PROMPT_TEMPLATE.format(context=context_text))
+    time.sleep(1)
+    response = model.invoke(PROMPT_TEMPLATE.format(context=context_text))
     
     try:
-        text = response.text
+        text = response.content
         question = text.split("QUESTION:")[1].split("GROUND_TRUTH:")[0].strip()
         answer = text.split("GROUND_TRUTH:")[1].strip()
         return question, answer
@@ -89,4 +91,3 @@ def process_files():
 
 if __name__ == "__main__":
     process_files()
-
